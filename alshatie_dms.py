@@ -151,7 +151,7 @@ else:
     if is_guest:
         # ===================== التعديل هنا =====================
         main_title = "📄 الوثائق والملفات العامة"  # الشاشة اليمنى للضيف
-        files_screen_title = "📂 قاعدة الملفات"    # الشاشة الشمال للضيف
+        files_screen_title = "📂 قاعدة المملفات"    # الشاشة الشمال للضيف
         # =======================================================
     else:
         main_title = t["nav_main_user"]  # ملفات ومراسلات لباقي المستخدمين
@@ -330,7 +330,7 @@ else:
         
         st.divider()
 
-        # ====== متصفح الملفات (Windows Explorer Style) ======
+        # ====== متصفح المملفات (Windows Explorer Style) ======
         
         # 1. إعدادات الـ Session State للتنقل بين المجلدات
         if 'nav_path' not in st.session_state:
@@ -785,8 +785,17 @@ else:
 
         st.divider()
 
-        tab_add, tab_edit, tab_deleted_list = st.tabs([t["user_add_tab"], t["user_edit_tab"], t["user_deleted_list_tab"]])
+        # ============= إنشاء التبويبات =============
+        if is_admin:
+            # الأدمن يشوف ٤ تبويبات (إضافة، تعديل، محذوفون، إعدادات خاصة)
+            tab_add, tab_edit, tab_deleted_list, tab_admin_settings = st.tabs([
+                t["user_add_tab"], t["user_edit_tab"], t["user_deleted_list_tab"], "⚙️ إعدادات الأدمن (تغيير البيانات)"
+            ])
+        else:
+            # المدراء يشوفوا ٣ تبويبات بس
+            tab_add, tab_edit, tab_deleted_list = st.tabs([t["user_add_tab"], t["user_edit_tab"], t["user_deleted_list_tab"]])
 
+        # ============= تبويبة إضافة مستخدم =============
         with tab_add:
             with st.form("user_add_form", clear_on_submit=True):
                 new_u = st.text_input(t["username"])
@@ -810,6 +819,7 @@ else:
                         except Exception:
                             st.error("اسم المستخدم موجود مسبقاً!")
 
+        # ============= تبويبة تعديل مستخدم (باقي المستخدمين) =============
         with tab_edit:
             editable_users = [u[0] for u in display_users if u[0] != "admin"]
             edit_user_options = ["-- اختر مستخدم --"] + editable_users
@@ -866,6 +876,7 @@ else:
                     else:
                         st.error("يرجى اختيار مستخدم أولاً من القائمة!")
 
+        # ============= تبويبة المستخدمين المحذوفين =============
         with tab_deleted_list:
             if not display_deleted_users:
                 st.info("لا توجد حسابات محذوفة حالياً.")
@@ -873,6 +884,55 @@ else:
                 for du in display_deleted_users:
                     with st.container(border=True):
                         st.markdown(f"🗑️ **المستخدم:** `{du[0]}` | ❌ **حذفه:** `{du[8] or 'Unknown'}` | 📅 **تاريخ الحذف:** `{du[9] or '-'}`")
+
+        # ============= تبويبة إعدادات الأدمن (للأدمن فقط) =============
+        if is_admin:
+            with tab_admin_settings:
+                st.subheader("🔐 تغيير بيانات الدخول للأدمن")
+                
+                with st.form("admin_settings_form", clear_on_submit=True):
+                    old_pass = st.text_input("كلمة المرور الحالية", type="password")
+                    new_user = st.text_input("اسم المستخدم الجديد (اختياري - اتركه فارغاً إذا لا تريد تغييره)")
+                    new_pass = st.text_input("كلمة المرور الجديدة", type="password")
+                    confirm_pass = st.text_input("تأكيد كلمة المرور الجديدة", type="password")
+                    
+                    if st.form_submit_button("تحديث بيانات الأدمن"):
+                        # التحقق من صحة البيانات
+                        if not old_pass:
+                            st.error("❌ يجب كتابة كلمة المرور الحالية أولاً.")
+                        elif new_pass and new_pass != confirm_pass:
+                            st.error("❌ كلمة المرور الجديدة وتأكيدها غير متطابقين.")
+                        else:
+                            # التحقق من الباسورد القديم
+                            user_data = verify_user("admin", old_pass)
+                            if not user_data:
+                                st.error("❌ كلمة المرور الحالية غير صحيحة.")
+                            else:
+                                with get_connection() as conn:
+                                    cursor = conn.cursor()
+                                    
+                                    # 1. تغيير اسم المستخدم (لو مش فارغ)
+                                    if new_user and new_user.strip() and new_user != "admin":
+                                        # التحقق إن الاسم الجديد مش مكرر
+                                        cursor.execute("SELECT username FROM users WHERE username = ?", (new_user.strip(),))
+                                        if cursor.fetchone():
+                                            st.error(f"❌ اسم المستخدم '{new_user}' موجود مسبقاً.")
+                                        else:
+                                            cursor.execute("UPDATE users SET username = ? WHERE username = 'admin'", (new_user.strip(),))
+                                            st.success(f"✅ تم تغيير اسم المستخدم إلى: {new_user.strip()}")
+                                            st.session_state.user = new_user.strip()
+                                    
+                                    # 2. تغيير كلمة المرور (لو كتب باسورد جديد)
+                                    if new_pass:
+                                        hashed_new = hash_password(new_pass)
+                                        target_user = new_user.strip() if new_user and new_user.strip() else "admin"
+                                        cursor.execute("UPDATE users SET password = ? WHERE username = ?", (hashed_new, target_user))
+                                        st.success("✅ تم تغيير كلمة المرور بنجاح!")
+                                    
+                                    conn.commit()
+                                st.balloon_notify("تم تحديث البيانات بنجاح!")
+                                time.sleep(1)
+                                st.rerun()
 
     # ----------------------------------------------------
     # 4. لوحة التحكم والتحكم في المحذوفات للمدير العام
