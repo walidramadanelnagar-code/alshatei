@@ -92,6 +92,28 @@ if "logged_in" not in st.session_state:
     st.session_state.allowed = []
     st.session_state.role = "User"
 
+# =============================================================
+# 🔥 ميزة جديدة: تسجيل الدخول التلقائي عن طريق الرابط (?guest=username)
+# =============================================================
+query_params = st.query_params
+guest_login = query_params.get("guest", None)
+
+if guest_login:
+    # لو الرابط فيه ?guest=اسم_مستخدم، حاول نسجل دخوله فوراً
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT username, password, allowed_folders, role, created_by, created_at, updated_at, changes_log, status FROM users WHERE username = ? AND role = 'Guest'", (guest_login,))
+    row = cursor.fetchone()
+    conn.close()
+    
+    if row and row[7] == 'active':  # لو المستخدم موجود ونشط
+        st.session_state.logged_in = True
+        st.session_state.user = row[0]
+        st.session_state.allowed = row[1].split(",") if row[1] else []
+        st.session_state.role = row[2] if row[2] else "Guest"
+        log_activity(guest_login, "LOGIN_AUTO", "", "System", "Auto-logged in via link")
+# =============================================================
+
 top_col1, top_col2, top_col3 = st.columns([6, 2, 2])
 with top_col3:
     lang_choice = st.selectbox("🌐 Language / اللغة", ["العربية", "English"], key="top_lang_select")
@@ -151,7 +173,7 @@ else:
     if is_guest:
         # ===================== التعديل هنا =====================
         main_title = "📄 الوثائق والملفات العامة"  # الشاشة اليمنى للضيف
-        files_screen_title = "📂 قاعدة المملفات"    # الشاشة الشمال للضيف
+        files_screen_title = "📂 قاعدة الملفات"    # الشاشة الشمال للضيف
         # =======================================================
     else:
         main_title = t["nav_main_user"]  # ملفات ومراسلات لباقي المستخدمين
@@ -330,7 +352,7 @@ else:
         
         st.divider()
 
-        # ====== متصفح المملفات (Windows Explorer Style) ======
+        # ====== متصفح الملفات (Windows Explorer Style) ======
         
         # 1. إعدادات الـ Session State للتنقل بين المجلدات
         if 'nav_path' not in st.session_state:
@@ -930,7 +952,7 @@ else:
                                         st.success("✅ تم تغيير كلمة المرور بنجاح!")
                                     
                                     conn.commit()
-                                st.balloon_notify("تم تحديث البيانات بنجاح!")
+                                st.success("تم تحديث البيانات بنجاح!")
                                 time.sleep(1)
                                 st.rerun()
 
