@@ -281,6 +281,33 @@ else:
             else:
                 st.info(t["no_inbox"])
 
+        # =============================================================
+        # 🔥 زر التنظيف (للأدمن فقط - جديد)
+        # =============================================================
+        if is_admin:
+            st.divider()
+            col_btn1, col_btn2 = st.columns([1, 1])
+            with col_btn1:
+                if st.button("🧹 تنظيف الملفات المفقودة (حذف السجلات غير الموجودة)"):
+                    try:
+                        with get_connection() as conn:
+                            cursor = conn.cursor()
+                            cursor.execute("SELECT id, file_path FROM user_files")
+                            rows = cursor.fetchall()
+                            deleted_count = 0
+                            for row_id, f_path in rows:
+                                if not os.path.exists(f_path):
+                                    cursor.execute("DELETE FROM user_files WHERE id = ?", (row_id,))
+                                    deleted_count += 1
+                            conn.commit()
+                        if deleted_count > 0:
+                            st.success(f"✅ تم حذف {deleted_count} سجل غير صحيح من قائمة الملفات.")
+                            st.rerun()
+                        else:
+                            st.info("ℹ️ لا توجد ملفات مفقودة حالياً.")
+                    except Exception as e:
+                        st.error(f"حدث خطأ أثناء التنظيف: {e}")
+
     # ----------------------------------------------------
     # 2. إدارة الملفات والمجلدات (نسخة ويندوز إكسبلورر)
     # ----------------------------------------------------
@@ -1121,7 +1148,7 @@ else:
                                         st.rerun()
                                     else:
                                         st.error("❌ لم يتم اختيار ملف. يرجى اختيار ملف أولاً.")
-                
+                            
                 can_add_item = False
                 if is_admin or r_creator == st.session_state.user:
                     can_add_item = True
