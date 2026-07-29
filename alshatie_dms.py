@@ -10,6 +10,11 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 import pandas as pd
 import streamlit as st
 
+# 🔥 إضافة مكتبة التجميل
+from streamlit_extras.app_logo import add_logo
+from streamlit_extras.colored_header import colored_header
+from streamlit_extras.stylable_container import stylable_container
+
 from database import (
     init_db, log_activity, verify_user, 
     get_all_users, get_all_folders, get_subfolders, 
@@ -133,7 +138,11 @@ if not st.session_state.logged_in:
     </div>
     """, unsafe_allow_html=True)
     
-    st.title(t["login_title"])
+    colored_header(
+        label=t["login_title"],
+        description="",
+        color_name="blue-70"
+    )
     username_input = st.text_input(t["username"])
     password_input = st.text_input(t["password"], type="password")
     
