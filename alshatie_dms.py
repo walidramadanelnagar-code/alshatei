@@ -147,25 +147,15 @@ if "logged_in" not in st.session_state:
     st.session_state.role = "User"
 
 # =============================================================
-# 🔥 الحل النهائي: قراءة الرابط من st.context.headers
+# 🔥 الحل النهائي باستخدام st.query_params
 # =============================================================
-try:
-    # نجيب الرابط الحالي من المتصفح
-    current_url = st.context.headers.get("referer", "")
-    # نبحث عن &guest= أو ?guest=
-    if "?guest=" in current_url:
-        guest_login = current_url.split("?guest=")[1].split("&")[0]
-    elif "&guest=" in current_url:
-        guest_login = current_url.split("&guest=")[1].split("&")[0]
-    else:
-        guest_login = None
-except:
-    guest_login = None
+query_params = st.query_params
+guest_login = query_params.get("guest")
 
 if guest_login:
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT username, password, allowed_folders, role, created_by, created_at, updated_at, changes_log, status FROM users WHERE username = ? AND role = 'Guest'", (guest_login,))
+    cursor.execute("SELECT username, password, allowed_folders, role, created_by, created_at, updated_at, changes_log, status FROM users WHERE username = ? AND role = 'guest'", (guest_login,))
     row = cursor.fetchone()
     conn.close()
     
@@ -173,7 +163,7 @@ if guest_login:
         st.session_state.logged_in = True
         st.session_state.user = row[0]
         st.session_state.allowed = row[1].split(",") if row[1] else []
-        st.session_state.role = row[2] if row[2] else "Guest"
+        st.session_state.role = row[2] if row[2] else "guest"
         log_activity(guest_login, "LOGIN_AUTO", "", "System", "Auto-logged in via link")
 # =============================================================
 
@@ -226,7 +216,7 @@ else:
             st.session_state.role = "User"
             st.rerun()
 
-    is_guest = (st.session_state.role == "Guest")
+    is_guest = (st.session_state.role == "guest")
     is_admin = (st.session_state.role == "Admin" or st.session_state.user == "admin")
     is_manager = (st.session_state.role == "Manager")
 
