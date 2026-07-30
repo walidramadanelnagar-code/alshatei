@@ -146,8 +146,15 @@ if "logged_in" not in st.session_state:
     st.session_state.allowed = []
     st.session_state.role = "User"
 
+# =============================================================
+# 🔥 التعديل الأساسي هنا: استخدام st.query_params بالطريقة الصحيحة
+# =============================================================
 query_params = st.query_params
-guest_login = query_params.get("guest", None)
+guest_login = query_params.get("guest")
+
+# إذا كان القيمة قائمة (list)، نأخذ العنصر الأول
+if isinstance(guest_login, list):
+    guest_login = guest_login[0] if guest_login else None
 
 if guest_login:
     conn = get_connection()
@@ -162,6 +169,7 @@ if guest_login:
         st.session_state.allowed = row[1].split(",") if row[1] else []
         st.session_state.role = row[2] if row[2] else "Guest"
         log_activity(guest_login, "LOGIN_AUTO", "", "System", "Auto-logged in via link")
+# =============================================================
 
 top_col1, top_col2, top_col3 = st.columns([6, 2, 2])
 with top_col3:
