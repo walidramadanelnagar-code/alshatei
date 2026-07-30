@@ -147,16 +147,20 @@ if "logged_in" not in st.session_state:
     st.session_state.role = "User"
 
 # =============================================================
-# 🔥 الحل الجذري والأخير للدخول المباشر
+# 🔥 الحل النهائي: قراءة الرابط من st.context.headers
 # =============================================================
 try:
-    # المحاولة باستخدام الطريقة الحديثة
-    query_params = st.query_params
-    guest_login = query_params.get("guest")
+    # نجيب الرابط الحالي من المتصفح
+    current_url = st.context.headers.get("referer", "")
+    # نبحث عن &guest= أو ?guest=
+    if "?guest=" in current_url:
+        guest_login = current_url.split("?guest=")[1].split("&")[0]
+    elif "&guest=" in current_url:
+        guest_login = current_url.split("&guest=")[1].split("&")[0]
+    else:
+        guest_login = None
 except:
-    # لو فشلت، نستخدم الطريقة القديمة (التي تعمل في جميع الإصدارات)
-    query_params = st.experimental_get_query_params()
-    guest_login = query_params.get("guest", [None])[0]
+    guest_login = None
 
 if guest_login:
     conn = get_connection()
