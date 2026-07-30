@@ -10,9 +10,6 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 import pandas as pd
 import streamlit as st
 
-# 🔥 إضافة مكتبة التجميل
-from streamlit_extras.app_logo import add_logo
-from streamlit_extras.colored_header import colored_header
 from streamlit_extras.stylable_container import stylable_container
 
 from database import (
@@ -24,26 +21,55 @@ from translations import TRANSLATIONS
 
 st.set_page_config(page_title="نظام ضبط ومشاركة الوثائق - أعمال الشاطئ", layout="wide", initial_sidebar_state="expanded")
 
-# =============================================================
-# 🔥 إعدادات الشعار (نص) والأيقونة والـ Footer
-# =============================================================
-
-# 1. إعداد أيقونة المتصفح (تاج التبويبة) - لو مش موجودة مش هتظهر
 st.markdown("""
 <link rel="icon" type="image/x-icon" href="static/favicon.ico">
 """, unsafe_allow_html=True)
 
-# 2. إعدادات تنسيق النص والـ Footer
 st.markdown("""
     <style>
-    /* إخفاء عناصر Streamlit الافتراضية */
     header {visibility: hidden !important;}
     #MainMenu {visibility: hidden !important;}
     footer {visibility: hidden !important;}
     .stDeployButton {display: none !important;}
     [data-testid="stStatusWidget"] {visibility: hidden !important;}
     
-    /* ✅ تنسيق نص مجموعة أعمال الشاطئ (بدلاً من الشعار) */
+    .stApp { background-color: #0e1117; }
+    
+    .stButton button {
+        color: white;
+        border-radius: 8px;
+        border: none;
+        padding: 8px 16px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .stButton button[kind="secondary"], 
+    .stButton button:not([kind]) {
+        background-color: #2d3748 !important;
+        border: 1px solid #4a5568;
+    }
+    .stButton button[kind="secondary"]:hover,
+    .stButton button:not([kind]):hover {
+        background-color: #4a5568 !important;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 8px rgba(0,0,0,0.4);
+    }
+    
+    .stButton button[kind="primary"] {
+        background-color: #3b82f6;
+    }
+    .stButton button[kind="primary"]:hover {
+        background-color: #2563eb;
+    }
+
+    .stTextInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] {
+        border-radius: 8px;
+        border: 1px solid #374151;
+        background-color: #1f2937;
+        color: #f3f4f6;
+    }
+    
     .brand-text-container {
         display: flex;
         justify-content: center;
@@ -55,20 +81,19 @@ st.markdown("""
         font-size: 38px;
         font-weight: 700;
         letter-spacing: 2px;
-        background: linear-gradient(135deg, #f5af19 0%, #f12711 100%); /* تدرج ذهبي/نحاسي */
+        background: linear-gradient(135deg, #f5af19 0%, #f12711 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
         text-shadow: 0px 4px 10px rgba(0,0,0,0.3);
     }
     
-    /* ✅ تنسيق الـ Footer (تحت الصفحة) */
     .custom-footer {
         position: fixed;
         left: 0;
         bottom: 0;
         width: 100%;
-        background: rgba(17, 24, 39, 0.95); /* خلفية داكنة شفافة */
+        background: rgba(17, 24, 39, 0.95);
         color: #a0a0a0;
         text-align: center;
         padding: 12px 0;
@@ -78,12 +103,36 @@ st.markdown("""
         z-index: 999;
         backdrop-filter: blur(5px);
     }
-    .custom-footer span {
-        color: #d4af37; /* لون ذهبي للنص المهم */
-    }
+    .custom-footer span { color: #d4af37; }
     </style>
 """, unsafe_allow_html=True)
 
+st.markdown("""
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+""", unsafe_allow_html=True)
+
+# =============================================================
+# محاولة تحديث الجداول لإضافة أعمدة الحذف (للداتابيس القديمة)
+# =============================================================
+def update_db_schema():
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("ALTER TABLE user_files ADD COLUMN deleted_by_sender INTEGER DEFAULT 0")
+        conn.commit()
+        conn.close()
+    except:
+        pass
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("ALTER TABLE user_files ADD COLUMN deleted_by_recipient INTEGER DEFAULT 0")
+        conn.commit()
+        conn.close()
+    except:
+        pass
+
+update_db_schema()
 # =============================================================
 
 init_db()
@@ -97,27 +146,22 @@ if "logged_in" not in st.session_state:
     st.session_state.allowed = []
     st.session_state.role = "User"
 
-# =============================================================
-# 🔥 ميزة جديدة: تسجيل الدخول التلقائي عن طريق الرابط (?guest=username)
-# =============================================================
 query_params = st.query_params
 guest_login = query_params.get("guest", None)
 
 if guest_login:
-    # لو الرابط فيه ?guest=اسم_مستخدم، حاول نسجل دخوله فوراً
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT username, password, allowed_folders, role, created_by, created_at, updated_at, changes_log, status FROM users WHERE username = ? AND role = 'Guest'", (guest_login,))
     row = cursor.fetchone()
     conn.close()
     
-    if row and row[7] == 'active':  # لو المستخدم موجود ونشط
+    if row and row[7] == 'active':
         st.session_state.logged_in = True
         st.session_state.user = row[0]
         st.session_state.allowed = row[1].split(",") if row[1] else []
         st.session_state.role = row[2] if row[2] else "Guest"
         log_activity(guest_login, "LOGIN_AUTO", "", "System", "Auto-logged in via link")
-# =============================================================
 
 top_col1, top_col2, top_col3 = st.columns([6, 2, 2])
 with top_col3:
@@ -126,27 +170,26 @@ with top_col3:
 
 t = TRANSLATIONS[st.session_state.lang]
 
-# ----------------------------------------------------
-# تسجيل الدخول (مع النص المزين)
-# ----------------------------------------------------
 if not st.session_state.logged_in:
     
-    # عرض نص "مجموعة أعمال الشاطئ" بشكل مزين
     st.markdown("""
     <div class="brand-text-container">
         <div class="brand-text">مجموعة أعمال الشاطئ</div>
     </div>
     """, unsafe_allow_html=True)
     
-    colored_header(
-        label=t["login_title"],
-        description="",
-        color_name="blue-70"
-    )
+    st.markdown("""
+    <h1 style='text-align: center; font-size: 38px;'>
+        <i class="fas fa-lock-open" style="color: #3b82f6; margin-right: 10px;"></i> 
+        تسجيل الدخول للنظام
+    </h1>
+    <div style='width: 100px; height: 3px; background: #3b82f6; margin: 10px auto 30px auto; border-radius: 2px;'></div>
+    """, unsafe_allow_html=True)
+    
     username_input = st.text_input(t["username"])
     password_input = st.text_input(t["password"], type="password")
     
-    if st.button(t["login_btn"]):
+    if st.button(t["login_btn"], type="primary"):
         user_data = verify_user(username_input, password_input)
         if user_data:
             st.session_state.logged_in = True
@@ -158,9 +201,6 @@ if not st.session_state.logged_in:
         else:
             st.error("خطأ في بيانات الدخول / Invalid Credentials")
 
-# ----------------------------------------------------
-# الواجهة الرئيسية
-# ----------------------------------------------------
 else:
     with top_col2:
         st.write(f"👨‍💼 **{t['welcome']}, {st.session_state.user}**")
@@ -178,14 +218,11 @@ else:
 
     files_screen_title = t["nav_files_guest"] if is_guest else t["nav_files"]
     
-    # تحديد اسم التبويبة الأولى والصلاحيات
     if is_guest:
-        # ===================== التعديل هنا =====================
-        main_title = "📄 الوثائق والملفات العامة"  # الشاشة اليمنى للضيف
-        files_screen_title = "📂 قاعدة الملفات"    # الشاشة الشمال للضيف
-        # =======================================================
+        main_title = "📄 الوثائق والملفات العامة"
+        files_screen_title = "📂 قاعدة الملفات"
     else:
-        main_title = t["nav_main_user"]  # ملفات ومراسلات لباقي المستخدمين
+        main_title = t["nav_main_user"]
     
     nav_options = [main_title, files_screen_title]
     if is_admin or is_manager:
@@ -198,12 +235,11 @@ else:
     st.divider()
 
     # ----------------------------------------------------
-    # 1. الشاشة الرئيسية (وثائق ومراسلات - حسب الصلاحية)
+    # 1. الشاشة الرئيسية (مع زر الحذف الجديد)
     # ----------------------------------------------------
     if selected_screen == main_title:
         st.title(main_title)
         
-        # ===== حالــة الضيف (عرض ملفات فقط) =====
         if is_guest:
             with get_connection() as conn:
                 cursor = conn.cursor()
@@ -229,39 +265,31 @@ else:
             else:
                 st.info(t["no_inbox"])
 
-        # ===== حالــة المستخدمين العاديين (مراسلات + بيانات + إرسال) =====
         else:
             st.subheader("📤 إرسال ملف لزميل")
             with st.form("send_file_form", clear_on_submit=True):
-                # قائمة المستخدمين النشطين (ما عدا نفسي والضيف)
                 active_users = [u[0] for u in get_all_users() if u[7] == 'active' and u[0] != st.session_state.user and u[2] != "Guest"]
                 
                 if not active_users:
                     st.warning("لا يوجد مستخدمين نشطين لإرسال الملفات إليهم حالياً.")
                 else:
-                    # بدل ما يظهر افتراضي، نبدأ بـ "اختر..."
                     recipient = st.selectbox(t["send_to"], ["--- اختر المستخدم ---"] + active_users)
                     msg = st.text_area(t["your_message"])
                     uploaded_file = st.file_uploader(t["choose_file"], key="send_file_upload")
                     
                     if st.form_submit_button(t["send_now"]):
                         if uploaded_file is not None and recipient and recipient != "--- اختر المستخدم ---":
-                            
-                            # بداية شريط التقدم
                             progress_bar = st.progress(0, "جارٍ تجهيز الإرسال...")
                             
-                            # إنشاء مجلد للمستلم إذا لم يكن موجوداً
                             user_folder = os.path.join("storage", "UserFiles", recipient)
                             os.makedirs(user_folder, exist_ok=True)
                             
                             progress_bar.progress(30, "جارٍ رفع الملف وتخزينه...")
-                            
                             file_path = os.path.join(user_folder, uploaded_file.name)
                             with open(file_path, "wb") as f:
                                 f.write(uploaded_file.getbuffer())
                             
                             progress_bar.progress(70, "جارٍ تسجيل العملية في قاعدة البيانات...")
-                            
                             now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
                             with get_connection() as conn:
                                 cursor = conn.cursor()
@@ -282,44 +310,92 @@ else:
                             st.error("يرجى اختيار مستلم صحيح ورفع ملف أولاً.")
             
             st.divider()
-            
             st.subheader("📥 الملفات والمراسلات الواردة إلي")
             
             with get_connection() as conn:
                 cursor = conn.cursor()
+                # نجيب المراسلات اللي ممسوحتش من الطرفين
                 cursor.execute("""
-                    SELECT filename, sender_username, message, file_path, timestamp 
+                    SELECT id, filename, sender_username, message, file_path, timestamp, deleted_by_sender, deleted_by_recipient
                     FROM user_files 
-                    WHERE recipient_username = ?
+                    WHERE recipient_username = ? AND deleted_by_recipient = 0
                     ORDER BY timestamp DESC
                 """, (st.session_state.user,))
                 inbox = cursor.fetchall()
             
             if inbox:
-                for f_name, sender, msg, f_path, time_str in inbox:
+                for row in inbox:
+                    (msg_id, f_name, sender, msg, f_path, time_str, del_s, del_r) = row
+                    
                     with st.container(border=True):
-                        col1, col2, col3 = st.columns([3, 2, 1])
+                        col1, col2, col3 = st.columns([2, 2, 1])
                         col1.markdown(f"📄 **{f_name}**")
                         col2.caption(f"👤 {sender} | 🕒 {time_str}")
-                        if msg:
-                            col2.caption(f"📝 {msg}")
+                        if msg: col2.caption(f"📝 {msg}")
                         
                         if os.path.exists(f_path):
                             with open(f_path, "rb") as f:
-                                col3.download_button("⬇️ تحميل", f, file_name=f_name, key=f"dl_inbox_{f_name}")
+                                col3.download_button("⬇️ تحميل", f, file_name=f_name, key=f"dl_inbox_{msg_id}")
                         else:
                             col3.caption("الملف غير موجود")
+                        
+                        # زر حذف المراسلة
+                        if st.button(f"🗑️ حذف هذه المراسلة", key=f"del_msg_{msg_id}"):
+                            with get_connection() as conn:
+                                cur = conn.cursor()
+                                # تحديث عمود الحذف للمستلم
+                                cur.execute("UPDATE user_files SET deleted_by_recipient = 1 WHERE id = ?", (msg_id,))
+                                conn.commit()
+                            st.success("✅ تم حذف المراسلة من قائمتك.")
+                            st.rerun()
             else:
                 st.info(t["no_inbox"])
 
-        # =============================================================
-        # 🔥 زر التنظيف (للأدمن فقط - جديد)
-        # =============================================================
+            # عرض المراسلات الصادرة
+            st.divider()
+            st.subheader("📤 المراسلات الصادرة (التي أرسلتها)")
+            with get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT id, filename, recipient_username, message, file_path, timestamp, deleted_by_sender, deleted_by_recipient
+                    FROM user_files 
+                    WHERE sender_username = ? AND deleted_by_sender = 0
+                    ORDER BY timestamp DESC
+                """, (st.session_state.user,))
+                sent_items = cursor.fetchall()
+
+            if sent_items:
+                for row in sent_items:
+                    (msg_id, f_name, recipient, msg, f_path, time_str, del_s, del_r) = row
+                    
+                    with st.container(border=True):
+                        col1, col2, col3 = st.columns([2, 2, 1])
+                        col1.markdown(f"📄 **{f_name}** (مرسل إلى: {recipient})")
+                        col2.caption(f"🕒 {time_str}")
+                        if msg: col2.caption(f"📝 {msg}")
+                        
+                        if os.path.exists(f_path):
+                            with open(f_path, "rb") as f:
+                                col3.download_button("⬇️ تحميل", f, file_name=f_name, key=f"dl_sent_{msg_id}")
+                        else:
+                            col3.caption("الملف غير موجود")
+                        
+                        # زر حذف المراسلة الصادرة
+                        if st.button(f"🗑️ حذف هذه المراسلة", key=f"del_sent_{msg_id}"):
+                            with get_connection() as conn:
+                                cur = conn.cursor()
+                                cur.execute("UPDATE user_files SET deleted_by_sender = 1 WHERE id = ?", (msg_id,))
+                                conn.commit()
+                            st.success("✅ تم حذف المراسلة من قائمتك.")
+                            st.rerun()
+            else:
+                st.info("لا توجد مراسلات صادرة حالياً.")
+
         if is_admin:
             st.divider()
             col_btn1, col_btn2 = st.columns([1, 1])
             with col_btn1:
-                if st.button("🧹 تنظيف الملفات المفقودة (حذف السجلات غير الموجودة)"):
+                if st.button("🧹 تنظيف الملفات المفقودة"):
                     try:
                         with get_connection() as conn:
                             cursor = conn.cursor()
@@ -332,20 +408,18 @@ else:
                                     deleted_count += 1
                             conn.commit()
                         if deleted_count > 0:
-                            st.success(f"✅ تم حذف {deleted_count} سجل غير صحيح من قائمة الملفات.")
+                            st.success(f"✅ تم حذف {deleted_count} سجل غير صحيح.")
                             st.rerun()
-                        else:
-                            st.info("ℹ️ لا توجد ملفات مفقودة حالياً.")
+                        else: st.info("لا توجد ملفات مفقودة.")
                     except Exception as e:
-                        st.error(f"حدث خطأ أثناء التنظيف: {e}")
+                        st.error(f"حدث خطأ: {e}")
 
     # ----------------------------------------------------
-    # 2. إدارة الملفات والمجلدات (نسخة ويندوز إكسبلورر)
+    # 2. إدارة الملفات والمجلدات
     # ----------------------------------------------------
     elif selected_screen == files_screen_title:
         st.title(files_screen_title)
         
-        # ====== البحث والفلترة ======
         st.subheader("🔍 " + t["search_title"])
         f_col1, f_col2, f_col3, f_col4 = st.columns(4)
         search_keyword = f_col1.text_input(t["search_input"], "").strip().lower()
@@ -361,13 +435,9 @@ else:
         
         st.divider()
 
-        # ====== متصفح الملفات (Windows Explorer Style) ======
-        
-        # 1. إعدادات الـ Session State للتنقل بين المجلدات
         if 'nav_path' not in st.session_state:
-            st.session_state.nav_path = [] # قائمة لتخزين مسار المجلد الحالي (مثلاً ['Main', 'SubFolder'])
+            st.session_state.nav_path = []
         
-        # 2. دوال مساعدة للتنقل
         def go_to_folder(folder_name, parent_name):
             if parent_name:
                 if not st.session_state.nav_path or st.session_state.nav_path[-1] != parent_name:
@@ -383,7 +453,6 @@ else:
         def go_home():
             st.session_state.nav_path = []
 
-        # 3. تحديد المجلد الحالي بناءً على المسار
         current_display_folder = None
         current_display_folder_tag = None
         
@@ -398,7 +467,6 @@ else:
             current_display_folder = sub
             current_display_folder_tag = f"{parent} / {sub}"
 
-        # 4. عرض أزرار التنقل (مثل شريط العنوان في ويندوز)
         col_nav1, col_nav2, col_nav3 = st.columns([1, 8, 1])
         with col_nav1:
             if st.button("🏠 الرئيسية", disabled=(not st.session_state.nav_path)):
@@ -414,7 +482,6 @@ else:
 
         st.markdown("---")
 
-        # 5. دالة لعرض الملفات
         def render_explorer_files(files_list, current_folder_path):
             if not files_list:
                 st.caption("📭 هذا المجلد فارغ.")
@@ -449,8 +516,7 @@ else:
                         cy, cn = st.columns(2)
                         if cy.button("✅ نعم", key=f"yes_ex_{row_id}"):
                             dest_path = os.path.join("storage", "Deleted", f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{f_name}")
-                            if os.path.exists(f_path):
-                                shutil.move(f_path, dest_path)
+                            if os.path.exists(f_path): shutil.move(f_path, dest_path)
                             
                             now_t = datetime.now().strftime("%Y-%m-%d %H:%M")
                             with get_connection() as conn:
@@ -467,7 +533,6 @@ else:
                             del st.session_state[f"confirm_ex_{row_id}"]
                             st.rerun()
 
-        # 6. منطق العرض حسب الحالة
         if current_display_folder == "ROOT":
             st.subheader("📁 المجلدات الرئيسية")
             allowed_folders = get_all_folders() if is_admin else st.session_state.allowed
@@ -484,8 +549,6 @@ else:
                     st.rerun()
                     
         else:
-            # نحن داخل مجلد (رئيسي أو فرعي)
-            
             with get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute("SELECT id, filename, uploaded_by, timestamp FROM file_logs WHERE folder = ? AND status = 'active' ORDER BY timestamp DESC", (current_display_folder_tag,))
@@ -503,7 +566,6 @@ else:
 
             filtered_files = [f for f in files_in_folder if check_file_filter(f[1], f[2])]
 
-            # 1. عرض المجلدات الفرعية
             if sub_folders_in_current:
                 st.markdown("##### 📂 المجلدات الفرعية:")
                 col_sub1, col_sub2, col_sub3 = st.columns(3)
@@ -525,11 +587,9 @@ else:
                                 st.rerun()
                 st.markdown("---")
 
-            # 2. عرض الملفات
             st.markdown(f"##### 📄 ملفات المجلد `{current_display_folder}`:")
             render_explorer_files(filtered_files, current_display_folder_tag)
 
-        # ====== رفع الملفات (داخل المكان الحالي فقط) ======
         if not is_guest:
             st.divider()
             st.subheader("📤 " + t["upload_section"])
@@ -589,7 +649,6 @@ else:
             else:
                 st.info("📁 اذهب إلى أحد المجلدات أولاً لرفع ملفاتك.")
 
-        # ====== القسم 4: إنشاء المجلدات للمدراء ======
         st.markdown("---")
         if is_admin or is_manager:
             st.subheader("📂 إدارة المجلدات")
@@ -639,7 +698,6 @@ else:
                 with m_tab1:
                     m_type = st.radio("نوع المجلد المراد تعديله", ["رئيسي", "فرعي"], horizontal=True, key="ren_type")
                     if m_type == "رئيسي":
-                        # إذا كان المستخدم مدير (وليس أدمن)، لا يسمح له بتعديل الاسم الرئيسي
                         if is_admin:
                             cur_m = st.selectbox("اختر المجلد الرئيسي", get_all_folders(), key="ren_m_sel")
                             ren_m_input = st.text_input("الاسم الجديد للمجلد الرئيسي", key="ren_m_input").strip()
@@ -690,7 +748,6 @@ else:
                     del_m_type = st.radio("نوع المجلد المراد حذفه ونقله للمحذوفات", ["رئيسي (بكل محتوياته)", "فرعي فقط"], horizontal=True, key="del_m_type")
                     now_t = datetime.now().strftime("%Y-%m-%d %H:%M")
                     if del_m_type == "رئيسي (بكل محتوياته)":
-                        # إذا كان المستخدم مدير (وليس أدمن)، لا يسمح له بحذف الرئيسي
                         if is_admin:
                             target_del_m = st.selectbox("اختر المجلد الرئيسي للحذف", get_all_folders(), key="target_del_m")
                             if st.button("⚠️ نقل المجلد الرئيسي للمحذوفات", type="primary"):
@@ -816,17 +873,13 @@ else:
 
         st.divider()
 
-        # ============= إنشاء التبويبات =============
         if is_admin:
-            # الأدمن يشوف ٤ تبويبات (إضافة، تعديل، محذوفون، إعدادات خاصة)
             tab_add, tab_edit, tab_deleted_list, tab_admin_settings = st.tabs([
                 t["user_add_tab"], t["user_edit_tab"], t["user_deleted_list_tab"], "⚙️ إعدادات الأدمن (تغيير البيانات)"
             ])
         else:
-            # المدراء يشوفوا ٣ تبويبات بس
             tab_add, tab_edit, tab_deleted_list = st.tabs([t["user_add_tab"], t["user_edit_tab"], t["user_deleted_list_tab"]])
 
-        # ============= تبويبة إضافة مستخدم =============
         with tab_add:
             with st.form("user_add_form", clear_on_submit=True):
                 new_u = st.text_input(t["username"])
@@ -850,7 +903,6 @@ else:
                         except Exception:
                             st.error("اسم المستخدم موجود مسبقاً!")
 
-        # ============= تبويبة تعديل مستخدم (باقي المستخدمين) =============
         with tab_edit:
             editable_users = [u[0] for u in display_users if u[0] != "admin"]
             edit_user_options = ["-- اختر مستخدم --"] + editable_users
@@ -907,7 +959,6 @@ else:
                     else:
                         st.error("يرجى اختيار مستخدم أولاً من القائمة!")
 
-        # ============= تبويبة المستخدمين المحذوفين =============
         with tab_deleted_list:
             if not display_deleted_users:
                 st.info("لا توجد حسابات محذوفة حالياً.")
@@ -916,7 +967,6 @@ else:
                     with st.container(border=True):
                         st.markdown(f"🗑️ **المستخدم:** `{du[0]}` | ❌ **حذفه:** `{du[8] or 'Unknown'}` | 📅 **تاريخ الحذف:** `{du[9] or '-'}`")
 
-        # ============= تبويبة إعدادات الأدمن (للأدمن فقط) =============
         if is_admin:
             with tab_admin_settings:
                 st.subheader("🔐 تغيير بيانات الدخول للأدمن")
@@ -928,13 +978,11 @@ else:
                     confirm_pass = st.text_input("تأكيد كلمة المرور الجديدة", type="password")
                     
                     if st.form_submit_button("تحديث بيانات الأدمن"):
-                        # التحقق من صحة البيانات
                         if not old_pass:
                             st.error("❌ يجب كتابة كلمة المرور الحالية أولاً.")
                         elif new_pass and new_pass != confirm_pass:
                             st.error("❌ كلمة المرور الجديدة وتأكيدها غير متطابقين.")
                         else:
-                            # التحقق من الباسورد القديم
                             user_data = verify_user("admin", old_pass)
                             if not user_data:
                                 st.error("❌ كلمة المرور الحالية غير صحيحة.")
@@ -942,9 +990,7 @@ else:
                                 with get_connection() as conn:
                                     cursor = conn.cursor()
                                     
-                                    # 1. تغيير اسم المستخدم (لو مش فارغ)
                                     if new_user and new_user.strip() and new_user != "admin":
-                                        # التحقق إن الاسم الجديد مش مكرر
                                         cursor.execute("SELECT username FROM users WHERE username = ?", (new_user.strip(),))
                                         if cursor.fetchone():
                                             st.error(f"❌ اسم المستخدم '{new_user}' موجود مسبقاً.")
@@ -953,7 +999,6 @@ else:
                                             st.success(f"✅ تم تغيير اسم المستخدم إلى: {new_user.strip()}")
                                             st.session_state.user = new_user.strip()
                                     
-                                    # 2. تغيير كلمة المرور (لو كتب باسورد جديد)
                                     if new_pass:
                                         hashed_new = hash_password(new_pass)
                                         target_user = new_user.strip() if new_user and new_user.strip() else "admin"
@@ -966,7 +1011,7 @@ else:
                                 st.rerun()
 
     # ----------------------------------------------------
-    # 4. لوحة التحكم والتحكم في المحذوفات للمدير العام
+    # 4. لوحة التحكم الرئيسية
     # ----------------------------------------------------
     elif selected_screen == t["nav_master"] and is_admin:
         st.title(t["nav_master"])
@@ -989,7 +1034,7 @@ else:
             st.dataframe(df_audit.head(15), use_container_width=True)
 
         st.divider()
-        st.subheader("♻️ سلة المحذوفات المتقدمة (إدارة المجلدات والملفات المحذوفة)")
+        st.subheader("♻️ سلة المحذوفات المتقدمة")
         m_del_tab, f_del_tab = st.tabs(["📁 المجلدات المحذوفة | Deleted Folders", "📄 الملفات المحذوفة | Deleted Files"])
         
         with m_del_tab:
@@ -1114,7 +1159,6 @@ else:
                             st.error("يرجى كتابة عنوان للتقرير.")
             st.divider()
 
-        # تحديد التقارير التي سيتم عرضها
         if is_admin:
             with get_connection() as conn:
                 cursor = conn.cursor()
