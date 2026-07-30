@@ -21,84 +21,116 @@ from translations import TRANSLATIONS
 
 st.set_page_config(page_title="نظام ضبط ومشاركة الوثائق - أعمال الشاطئ", layout="wide", initial_sidebar_state="expanded")
 
+# =============================================================
+# 🟢 إعدادات التخزين المؤقت للحجم والثيم
+# =============================================================
+if 'font_size' not in st.session_state:
+    st.session_state.font_size = 'وسط'
+if 'app_theme' not in st.session_state:
+    st.session_state.app_theme = 'داكن'
+
+# =============================================================
+
 st.markdown("""
 <link rel="icon" type="image/x-icon" href="static/favicon.ico">
 """, unsafe_allow_html=True)
 
 # =============================================================
-# 🟢 تم تحسين ألوان العناوين (Labels) لتكون بيضاء ناصعة
+# 🟢 تنسيقات CSS ديناميكية بناءً على حجم الخط المختار
 # =============================================================
-st.markdown("""
+def get_css():
+    fs = st.session_state.font_size
+    theme = st.session_state.app_theme
+    
+    bg_color = "#0e1117" if theme == "داكن" else "#ffffff"
+    text_color = "#ffffff" if theme == "داكن" else "#000000"
+    input_bg = "#1f2937" if theme == "داكن" else "#f0f2f6"
+    input_border = "#374151" if theme == "داكن" else "#d0d0d0"
+    
+    if fs == 'صغير':
+        f_size = '14px'
+    elif fs == 'وسط':
+        f_size = '18px'
+    else:
+        f_size = '22px'
+
+    return f"""
     <style>
     /* إخفاء عناصر Streamlit الافتراضية */
-    header {visibility: hidden !important;}
-    #MainMenu {visibility: hidden !important;}
-    footer {visibility: hidden !important;}
-    .stDeployButton {display: none !important;}
-    [data-testid="stStatusWidget"] {visibility: hidden !important;}
+    header {{visibility: hidden !important;}}
+    #MainMenu {{visibility: hidden !important;}}
+    footer {{visibility: hidden !important;}}
+    .stDeployButton {{display: none !important;}}
+    [data-testid="stStatusWidget"] {{visibility: hidden !important;}}
     
-    .stApp { background-color: #0e1117; }
+    .stApp {{ background-color: {bg_color}; }}
     
-    /* ✅ تنسيق جميع النصوص الرئيسية */
-    .stApp, .stTextInput, .stTextArea, .stSelectbox, .stMarkdown, .stCaption, .stDataFrame {
-        color: #ffffff !important;
-    }
+    /* ✅ تنسيق جميع النصوص الرئيسية والكبيرة */
+    .stApp, .stTextInput, .stTextArea, .stSelectbox, .stMarkdown, .stCaption, .stDataFrame, .stRadio div, .stExpander header {{
+        color: {text_color} !important;
+        font-size: {f_size} !important;
+    }}
     
-    /* ✅ أهم إضافة: تنسيق Labels (عناوين الحقول) لتكون بيضاء ناصعة */
-    .stTextInput label, .stTextArea label, .stSelectbox label, .stFileUploader label {
-        color: #ffffff !important;
-        font-weight: 500;
-    }
+    /* ✅ تنسيق Labels (عناوين الحقول) */
+    .stTextInput label, .stTextArea label, .stSelectbox label, .stFileUploader label, .stRadio label {{
+        color: {text_color} !important;
+        font-weight: 600;
+        font-size: {f_size} !important;
+    }}
     
     /* ✅ تنسيق الخيارات داخل القوائم المنسدلة */
-    .stSelectbox div[data-baseweb="select"] > div {
-        color: #ffffff !important;
-    }
+    .stSelectbox div[data-baseweb="select"] > div {{
+        color: {text_color} !important;
+    }}
     
     /* ✅ تنسيق الأزرار */
-    .stButton button {
+    .stButton button {{
         color: #ffffff !important;
         border-radius: 8px;
         border: none;
-        padding: 8px 16px;
+        padding: 10px 20px;
         font-weight: 500;
+        font-size: {f_size} !important;
         transition: all 0.3s ease;
-    }
+    }}
     
     .stButton button[kind="secondary"], 
-    .stButton button:not([kind]) {
+    .stButton button:not([kind]) {{
         background-color: #2d3748 !important;
         border: 1px solid #4a5568;
-    }
+    }}
     .stButton button[kind="secondary"]:hover,
-    .stButton button:not([kind]):hover {
+    .stButton button:not([kind]):hover {{
         background-color: #4a5568 !important;
         transform: translateY(-2px);
         box-shadow: 0 6px 8px rgba(0,0,0,0.4);
-    }
+    }}
     
-    .stButton button[kind="primary"] {
+    .stButton button[kind="primary"] {{
         background-color: #3b82f6;
-    }
-    .stButton button[kind="primary"]:hover {
+    }}
+    .stButton button[kind="primary"]:hover {{
         background-color: #2563eb;
-    }
+    }}
 
-    .stTextInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] {
+    /* ✅ تنسيق مربعات النص */
+    .stTextInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] {{
         border-radius: 8px;
-        border: 1px solid #374151;
-        background-color: #1f2937;
-        color: #ffffff !important;
-    }
+        border: 1px solid {input_border};
+        background-color: {input_bg};
+        color: {text_color} !important;
+        font-size: {f_size} !important;
+    }}
     
-    .brand-text-container {
+    /* ✅ تنسيق شعار البراند */
+    .brand-text-container {{
         display: flex;
         justify-content: center;
         align-items: center;
         margin-top: 40px;
         margin-bottom: 5px;
-    }
-    .brand-text {
+    }}
+    .brand-text {{
         font-size: 38px;
         font-weight: 700;
         letter-spacing: 2px;
@@ -107,15 +139,16 @@ st.markdown("""
         -webkit-text-fill-color: transparent;
         background-clip: text;
         text-shadow: 0px 4px 10px rgba(0,0,0,0.3);
-    }
+    }}
     
-    .custom-footer {
+    /* ✅ تنسيق الـ Footer */
+    .custom-footer {{
         position: fixed;
         left: 0;
         bottom: 0;
         width: 100%;
         background: rgba(17, 24, 39, 0.95);
-        color: #ffffff !important;
+        color: {text_color} !important;
         text-align: center;
         padding: 12px 0;
         font-size: 14px;
@@ -123,10 +156,12 @@ st.markdown("""
         border-top: 1px solid #2d3748;
         z-index: 999;
         backdrop-filter: blur(5px);
-    }
-    .custom-footer span { color: #d4af37; }
+    }}
+    .custom-footer span {{ color: #d4af37; }}
     </style>
-""", unsafe_allow_html=True)
+    """
+
+st.markdown(get_css(), unsafe_allow_html=True)
 
 st.markdown("""
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -193,6 +228,18 @@ with top_col3:
     lang_choice = st.selectbox("🌐 Language / اللغة", ["العربية", "English"], key="top_lang_select")
     st.session_state.lang = 'en' if lang_choice == "English" else 'ar'
 
+# =============================================================
+# 🟢 إضافة شريط إعدادات الخط والثيم (فوق بجانب اللغة)
+# =============================================================
+with top_col2:
+    st.markdown("### ⚙️ إعدادات العرض")
+    col_set1, col_set2 = st.columns(2)
+    with col_set1:
+        st.session_state.font_size = st.selectbox("📏 حجم الخط", ["صغير", "وسط", "كبير"], index=["صغير", "وسط", "كبير"].index(st.session_state.font_size))
+    with col_set2:
+        st.session_state.app_theme = st.selectbox("🎨 الثيم", ["داكن", "نهاري"], index=["داكن", "نهاري"].index(st.session_state.app_theme))
+# =============================================================
+
 t = TRANSLATIONS[st.session_state.lang]
 
 if not st.session_state.logged_in:
@@ -227,7 +274,7 @@ if not st.session_state.logged_in:
             st.error("خطأ في بيانات الدخول / Invalid Credentials")
 
 else:
-    with top_col2:
+    with top_col1:
         st.write(f"👨‍💼 **{t['welcome']}, {st.session_state.user}**")
         if st.button(t["logout"]):
             log_activity(st.session_state.user, "LOGOUT", "", "System", "Logged out")
@@ -1276,70 +1323,4 @@ else:
                                     now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
                                     with get_connection() as conn:
                                         c = conn.cursor()
-                                        c.execute("UPDATE report_items SET status = 'approved', approved_by = ?, approved_at = ? WHERE id = ?", 
-                                                  (st.session_state.user, now_str, i_id))
-                                        conn.commit()
-                                    st.success("تم قبول البند بنجاح!")
-                                    st.rerun()
-                            
-                            if i_stat != "approved" and i_user == st.session_state.user and not is_guest:
-                                uploaded_file = st.file_uploader(f"📤 رفع الملف الخاص بهذا البند", key=f"upl_{i_id}")
-                                if st.button(f"رفع وتحديث الحالة", key=f"btn_up_{i_id}"):
-                                    if uploaded_file is not None:
-                                        report_folder = os.path.join("storage", "Reports", str(i_id))
-                                        os.makedirs(report_folder, exist_ok=True)
-                                        file_path = os.path.join(report_folder, uploaded_file.name)
-                                        with open(file_path, "wb") as f:
-                                            f.write(uploaded_file.getbuffer())
-                                        now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
-                                        with get_connection() as conn:
-                                            c = conn.cursor()
-                                            c.execute("UPDATE report_items SET status = 'uploaded', file_name = ?, file_path = ?, uploaded_by = ?, uploaded_at = ? WHERE id = ?",
-                                                      (uploaded_file.name, file_path, st.session_state.user, now_str, i_id))
-                                            conn.commit()
-                                        st.success("✅ تم رفع الملف وتحديث الحالة بنجاح! في انتظار مراجعة المدير.")
-                                        st.rerun()
-                                    else:
-                                        st.error("❌ لم يتم اختيار ملف. يرجى اختيار ملف أولاً.")
-                            
-                can_add_item = False
-                if is_admin or r_creator == st.session_state.user:
-                    can_add_item = True
-                
-                if can_add_item and not is_guest:
-                    st.divider()
-                    with st.form(key=f"add_item_{r_id}"):
-                        st.markdown("➕ إضافة بند/مهمة للتقرير")
-                        item_title = st.text_input("عنوان البند/المهمة")
-                        assign_user = st.selectbox("اختر الموظف المكلف بتنفيذ هذا البند", [u[0] for u in get_all_users() if u[7] == 'active'])
-                        if st.form_submit_button("إضافة البند"):
-                            if item_title.strip():
-                                now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
-                                with get_connection() as conn:
-                                    c = conn.cursor()
-                                    c.execute("INSERT INTO report_items (report_id, title, assigned_to_username, status, created_at) VALUES (?, ?, ?, 'pending', ?)",
-                                              (r_id, item_title.strip(), assign_user, now_str))
-                                    conn.commit()
-                                st.success("تم إضافة البند وتكليف الموظف به!")
-                                st.rerun()
-                            else:
-                                st.error("يرجى كتابة عنوان للبند.")
-                
-                if (is_admin or r_creator == st.session_state.user) and not is_guest:
-                    st.divider()
-                    if st.button(f"🏁 إنهاء وأرشفة التقرير - {r_title}", key=f"complete_{r_id}", type="primary"):
-                        with get_connection() as conn:
-                            c = conn.cursor()
-                            c.execute("UPDATE reports SET status = 'archived' WHERE id = ?", (r_id,))
-                            conn.commit()
-                        st.success("تم أرشفة التقرير. يمكن للأدمن استعادته من قسم الأرشيف.")
-                        st.rerun()
-
-# =============================================================
-# 🔥 الـ Footer الخاص بأسفل الصفحة (يظهر في كل الصفحات)
-# =============================================================
-st.markdown("""
-<div class="custom-footer">
-    جميع الحقوق محفوظة &copy; <span>مجموعة أعمال الشاطئ</span> - فريق البرمجة ونظم المعلومات
-</div>
-""", unsafe_allow_html=True)
+                                        c.execute("UPDATE report_items SET status = 'approved', approved_by = ?, approved_at
