@@ -25,8 +25,12 @@ st.markdown("""
 <link rel="icon" type="image/x-icon" href="static/favicon.ico">
 """, unsafe_allow_html=True)
 
+# =============================================================
+# 🟢 تم تغيير ألوان النصوص والـ Footer إلى أبيض ناصع
+# =============================================================
 st.markdown("""
     <style>
+    /* إخفاء عناصر Streamlit الافتراضية */
     header {visibility: hidden !important;}
     #MainMenu {visibility: hidden !important;}
     footer {visibility: hidden !important;}
@@ -35,8 +39,14 @@ st.markdown("""
     
     .stApp { background-color: #0e1117; }
     
+    /* ✅ تنسيق جميع النصوص لتكون بيضاء ناصعة */
+    .stApp, .stTextInput, .stTextArea, .stSelectbox, .stMarkdown, .stCaption, .stDataFrame {
+        color: #ffffff !important; /* لون أبيض ناصع */
+    }
+    
+    /* ✅ تنسيق الأزرار */
     .stButton button {
-        color: white;
+        color: #ffffff !important; /* النص داخل الأزرار أبيض */
         border-radius: 8px;
         border: none;
         padding: 8px 16px;
@@ -67,7 +77,7 @@ st.markdown("""
         border-radius: 8px;
         border: 1px solid #374151;
         background-color: #1f2937;
-        color: #f3f4f6;
+        color: #ffffff !important; /* أبيض ناصع داخل مربعات النص */
     }
     
     .brand-text-container {
@@ -94,7 +104,7 @@ st.markdown("""
         bottom: 0;
         width: 100%;
         background: rgba(17, 24, 39, 0.95);
-        color: #a0a0a0;
+        color: #ffffff !important; /* أبيض ناصع في الـ Footer */
         text-align: center;
         padding: 12px 0;
         font-size: 14px;
