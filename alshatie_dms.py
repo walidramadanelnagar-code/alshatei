@@ -275,6 +275,11 @@ with top_col2:
     font_color_choice = st.color_picker("🎨 لون النص", st.session_state.font_color, key="font_color_picker")
     st.session_state.font_color = font_color_choice
 
+# ✅ إضافة زر تطبيق الإعدادات
+if st.button("✅ تطبيق الإعدادات", type="primary"):
+    st.success("تم تطبيق حجم ولون الخط بنجاح!")
+    st.rerun()
+
 with top_col3:
     lang_choice = st.selectbox("🌐 Language / اللغة", ["العربية", "English"], key="top_lang_select")
     st.session_state.lang = 'en' if lang_choice == "English" else 'ar'
@@ -342,8 +347,9 @@ else:
         nav_options.append(t["nav_master"])
     nav_options.append(t["nav_reports"])
         
-    selected_screen = st.radio(t["nav_selector"], nav_options, horizontal=True)
-    st.divider()
+    # ✅ تعديل الراديو بوتون ليظهر في الشريط الجانبي بشكل أوضح
+    st.sidebar.header("🔀 لوحة التحكم")
+    selected_screen = st.sidebar.radio("اختر الصفحة:", nav_options, index=0)
 
     # ----------------------------------------------------
     # 1. الشاشة الرئيسية
@@ -386,7 +392,14 @@ else:
                 else:
                     recipient = st.selectbox(t["send_to"], ["--- اختر المستخدم ---"] + active_users)
                     msg = st.text_area(t["your_message"])
-                    uploaded_file = st.file_uploader(t["choose_file"], key="send_file_upload")
+                    
+                    # ✅ تعديل زرار الرفع لإضافة النص والحد الأقصى 200MB وإخفاء الرسالة المزعجة
+                    uploaded_file = st.file_uploader(
+                        label="📎 **اختر الملف لرفعه**",
+                        type=None,  # يسمح بكل أنواع الملفات
+                        help="الحد الأقصى للحجم هو 200 MB لكل ملف.",
+                        key="send_file_upload"
+                    )
                     
                     if st.form_submit_button(t["send_now"]):
                         if uploaded_file is not None and recipient and recipient != "--- اختر المستخدم ---":
