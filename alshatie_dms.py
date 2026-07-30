@@ -26,7 +26,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =============================================================
-# 🟢 تم تغيير ألوان النصوص والـ Footer إلى أبيض ناصع
+# 🟢 تم تحسين ألوان العناوين (Labels) لتكون بيضاء ناصعة
 # =============================================================
 st.markdown("""
     <style>
@@ -39,14 +39,25 @@ st.markdown("""
     
     .stApp { background-color: #0e1117; }
     
-    /* ✅ تنسيق جميع النصوص لتكون بيضاء ناصعة */
+    /* ✅ تنسيق جميع النصوص الرئيسية */
     .stApp, .stTextInput, .stTextArea, .stSelectbox, .stMarkdown, .stCaption, .stDataFrame {
-        color: #ffffff !important; /* لون أبيض ناصع */
+        color: #ffffff !important;
+    }
+    
+    /* ✅ أهم إضافة: تنسيق Labels (عناوين الحقول) لتكون بيضاء ناصعة */
+    .stTextInput label, .stTextArea label, .stSelectbox label, .stFileUploader label {
+        color: #ffffff !important;
+        font-weight: 500;
+    }
+    
+    /* ✅ تنسيق الخيارات داخل القوائم المنسدلة */
+    .stSelectbox div[data-baseweb="select"] > div {
+        color: #ffffff !important;
     }
     
     /* ✅ تنسيق الأزرار */
     .stButton button {
-        color: #ffffff !important; /* النص داخل الأزرار أبيض */
+        color: #ffffff !important;
         border-radius: 8px;
         border: none;
         padding: 8px 16px;
@@ -77,7 +88,7 @@ st.markdown("""
         border-radius: 8px;
         border: 1px solid #374151;
         background-color: #1f2937;
-        color: #ffffff !important; /* أبيض ناصع داخل مربعات النص */
+        color: #ffffff !important;
     }
     
     .brand-text-container {
@@ -104,7 +115,7 @@ st.markdown("""
         bottom: 0;
         width: 100%;
         background: rgba(17, 24, 39, 0.95);
-        color: #ffffff !important; /* أبيض ناصع في الـ Footer */
+        color: #ffffff !important;
         text-align: center;
         padding: 12px 0;
         font-size: 14px;
