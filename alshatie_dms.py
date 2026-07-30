@@ -112,7 +112,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =============================================================
-# محاولة تحديث الجداول لإضافة أعمدة الحذف (للداتابيس القديمة)
+# محاولة تحديث الجداول لإضافة أعمدة الحذف
 # =============================================================
 def update_db_schema():
     try:
@@ -147,14 +147,16 @@ if "logged_in" not in st.session_state:
     st.session_state.role = "User"
 
 # =============================================================
-# 🔥 التعديل الأساسي هنا: استخدام st.query_params بالطريقة الصحيحة
+# 🔥 الحل الجذري والأخير للدخول المباشر
 # =============================================================
-query_params = st.query_params
-guest_login = query_params.get("guest")
-
-# إذا كان القيمة قائمة (list)، نأخذ العنصر الأول
-if isinstance(guest_login, list):
-    guest_login = guest_login[0] if guest_login else None
+try:
+    # المحاولة باستخدام الطريقة الحديثة
+    query_params = st.query_params
+    guest_login = query_params.get("guest")
+except:
+    # لو فشلت، نستخدم الطريقة القديمة (التي تعمل في جميع الإصدارات)
+    query_params = st.experimental_get_query_params()
+    guest_login = query_params.get("guest", [None])[0]
 
 if guest_login:
     conn = get_connection()
@@ -243,7 +245,7 @@ else:
     st.divider()
 
     # ----------------------------------------------------
-    # 1. الشاشة الرئيسية (مع زر الحذف الجديد)
+    # 1. الشاشة الرئيسية
     # ----------------------------------------------------
     if selected_screen == main_title:
         st.title(main_title)
@@ -322,7 +324,6 @@ else:
             
             with get_connection() as conn:
                 cursor = conn.cursor()
-                # نجيب المراسلات اللي ممسوحتش من الطرفين
                 cursor.execute("""
                     SELECT id, filename, sender_username, message, file_path, timestamp, deleted_by_sender, deleted_by_recipient
                     FROM user_files 
@@ -347,11 +348,9 @@ else:
                         else:
                             col3.caption("الملف غير موجود")
                         
-                        # زر حذف المراسلة
                         if st.button(f"🗑️ حذف هذه المراسلة", key=f"del_msg_{msg_id}"):
                             with get_connection() as conn:
                                 cur = conn.cursor()
-                                # تحديث عمود الحذف للمستلم
                                 cur.execute("UPDATE user_files SET deleted_by_recipient = 1 WHERE id = ?", (msg_id,))
                                 conn.commit()
                             st.success("✅ تم حذف المراسلة من قائمتك.")
@@ -359,9 +358,8 @@ else:
             else:
                 st.info(t["no_inbox"])
 
-            # عرض المراسلات الصادرة
             st.divider()
-            st.subheader("📤 المراسلات الصادرة (التي أرسلتها)")
+            st.subheader("📤 المراسلات الصادرة")
             with get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute("""
@@ -388,7 +386,6 @@ else:
                         else:
                             col3.caption("الملف غير موجود")
                         
-                        # زر حذف المراسلة الصادرة
                         if st.button(f"🗑️ حذف هذه المراسلة", key=f"del_sent_{msg_id}"):
                             with get_connection() as conn:
                                 cur = conn.cursor()
@@ -401,26 +398,24 @@ else:
 
         if is_admin:
             st.divider()
-            col_btn1, col_btn2 = st.columns([1, 1])
-            with col_btn1:
-                if st.button("🧹 تنظيف الملفات المفقودة"):
-                    try:
-                        with get_connection() as conn:
-                            cursor = conn.cursor()
-                            cursor.execute("SELECT id, file_path FROM user_files")
-                            rows = cursor.fetchall()
-                            deleted_count = 0
-                            for row_id, f_path in rows:
-                                if not os.path.exists(f_path):
-                                    cursor.execute("DELETE FROM user_files WHERE id = ?", (row_id,))
-                                    deleted_count += 1
-                            conn.commit()
-                        if deleted_count > 0:
-                            st.success(f"✅ تم حذف {deleted_count} سجل غير صحيح.")
-                            st.rerun()
-                        else: st.info("لا توجد ملفات مفقودة.")
-                    except Exception as e:
-                        st.error(f"حدث خطأ: {e}")
+            if st.button("🧹 تنظيف الملفات المفقودة"):
+                try:
+                    with get_connection() as conn:
+                        cursor = conn.cursor()
+                        cursor.execute("SELECT id, file_path FROM user_files")
+                        rows = cursor.fetchall()
+                        deleted_count = 0
+                        for row_id, f_path in rows:
+                            if not os.path.exists(f_path):
+                                cursor.execute("DELETE FROM user_files WHERE id = ?", (row_id,))
+                                deleted_count += 1
+                        conn.commit()
+                    if deleted_count > 0:
+                        st.success(f"✅ تم حذف {deleted_count} سجل غير صحيح.")
+                        st.rerun()
+                    else: st.info("لا توجد ملفات مفقودة.")
+                except Exception as e:
+                    st.error(f"حدث خطأ: {e}")
 
     # ----------------------------------------------------
     # 2. إدارة الملفات والمجلدات
