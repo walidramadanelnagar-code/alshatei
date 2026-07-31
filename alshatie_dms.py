@@ -341,22 +341,21 @@ else:
             if inbox:
                 for row in inbox:
                     (msg_id, f_name, sender, msg, f_path, time_str, del_s, del_r) = row
-                    with st.container(border=True):
-                        col1, col2, col3 = st.columns([2, 2, 1])
-                        col1.markdown(f"📄 **{f_name}**")
-                        col2.caption(f"👤 {sender} | 🕒 {time_str}")
-                        if msg: col2.caption(f"📝 {msg}")
-                        if os.path.exists(f_path):
-                            with open(f_path, "rb") as f:
-                                col3.download_button("⬇️ تحميل", f, file_name=f_name, key=f"dl_inbox_{msg_id}")
-                        else:
-                            col3.caption(t['file_not_found'])
-                        if st.button(t['delete_btn'], key=f"del_msg_{msg_id}"):
-                            with get_connection() as conn:
-                                conn.cursor().execute("UPDATE user_files SET deleted_by_recipient = 1 WHERE id = ?", (msg_id,))
-                                conn.commit()
-                            st.success(t['delete_success'])
-                            st.rerun()
+                    col1, col2, col3 = st.columns([2, 2, 1])
+                    col1.markdown(f"📄 **{f_name}**")
+                    col2.caption(f"👤 {sender} | 🕒 {time_str}")
+                    if msg: col2.caption(f"📝 {msg}")
+                    if os.path.exists(f_path):
+                        with open(f_path, "rb") as f:
+                            col3.download_button("⬇️ تحميل", f, file_name=f_name, key=f"dl_inbox_{msg_id}")
+                    else:
+                        col3.caption(t['file_not_found'])
+                    if st.button(t['delete_btn'], key=f"del_msg_{msg_id}"):
+                        with get_connection() as conn:
+                            conn.cursor().execute("UPDATE user_files SET deleted_by_recipient = 1 WHERE id = ?", (msg_id,))
+                            conn.commit()
+                        st.success(t['delete_success'])
+                        st.rerun()
             else:
                 st.info(t['no_inbox'])
 
@@ -369,22 +368,21 @@ else:
             if sent_items:
                 for row in sent_items:
                     (msg_id, f_name, recipient, msg, f_path, time_str, del_s, del_r) = row
-                    with st.container(border=True):
-                        col1, col2, col3 = st.columns([2, 2, 1])
-                        col1.markdown(f"📄 **{f_name}** ({t['to_label']} {recipient})")
-                        col2.caption(f"🕒 {time_str}")
-                        if msg: col2.caption(f"📝 {msg}")
-                        if os.path.exists(f_path):
-                            with open(f_path, "rb") as f:
-                                col3.download_button("⬇️ تحميل", f, file_name=f_name, key=f"dl_sent_{msg_id}")
-                        else:
-                            col3.caption(t['file_not_found'])
-                        if st.button(t['delete_btn'], key=f"del_sent_{msg_id}"):
-                            with get_connection() as conn:
-                                conn.cursor().execute("UPDATE user_files SET deleted_by_sender = 1 WHERE id = ?", (msg_id,))
-                                conn.commit()
-                            st.success(t['delete_success'])
-                            st.rerun()
+                    col1, col2, col3 = st.columns([2, 2, 1])
+                    col1.markdown(f"📄 **{f_name}** ({t['to_label']} {recipient})")
+                    col2.caption(f"🕒 {time_str}")
+                    if msg: col2.caption(f"📝 {msg}")
+                    if os.path.exists(f_path):
+                        with open(f_path, "rb") as f:
+                            col3.download_button("⬇️ تحميل", f, file_name=f_name, key=f"dl_sent_{msg_id}")
+                    else:
+                        col3.caption(t['file_not_found'])
+                    if st.button(t['delete_btn'], key=f"del_sent_{msg_id}"):
+                        with get_connection() as conn:
+                            conn.cursor().execute("UPDATE user_files SET deleted_by_sender = 1 WHERE id = ?", (msg_id,))
+                            conn.commit()
+                        st.success(t['delete_success'])
+                        st.rerun()
             else:
                 st.info(t['no_sent'])
 
@@ -631,130 +629,124 @@ else:
             
             with col_f1:
                 st.markdown("📁 " + t['create_folder'])
-                # ✅ حذف التداخل: فريم واحد فقط
-                with st.container(border=True):
-                    with st.form("create_main_folder_form", clear_on_submit=True):
-                        new_m = st.text_input("اسم المجلد الرئيسي الجديد").strip()
-                        if st.form_submit_button("إنشاء"):
-                            if new_m:
-                                with get_connection() as conn:
-                                    cursor = conn.cursor()
-                                    try:
-                                        cursor.execute("INSERT INTO custom_folders (folder_name, status) VALUES (?, 'active')", (new_m,))
-                                        conn.commit()
-                                        os.makedirs(os.path.join("storage", new_m), exist_ok=True)
-                                        log_activity(st.session_state.user, "CREATE_FOLDER", "", new_m, "Created main folder")
-                                        st.success(f"تم إنشاء المجلد: {new_m}")
-                                        st.rerun()
-                                    except Exception:
-                                        st.error("المجلد موجود مسبقاً!")
+                with st.form("create_main_folder_form", clear_on_submit=True):
+                    new_m = st.text_input("اسم المجلد الرئيسي الجديد").strip()
+                    if st.form_submit_button("إنشاء"):
+                        if new_m:
+                            with get_connection() as conn:
+                                cursor = conn.cursor()
+                                try:
+                                    cursor.execute("INSERT INTO custom_folders (folder_name, status) VALUES (?, 'active')", (new_m,))
+                                    conn.commit()
+                                    os.makedirs(os.path.join("storage", new_m), exist_ok=True)
+                                    log_activity(st.session_state.user, "CREATE_FOLDER", "", new_m, "Created main folder")
+                                    st.success(f"تم إنشاء المجلد: {new_m}")
+                                    st.rerun()
+                                except Exception:
+                                    st.error("المجلد موجود مسبقاً!")
 
             with col_f2:
                 st.markdown("➕ " + t['create_sub'])
-                # ✅ حذف التداخل: فريم واحد فقط
-                with st.container(border=True):
-                    with st.form("create_sub_folder_form", clear_on_submit=True):
-                        allowed_p = get_all_folders() if is_admin else st.session_state.allowed
-                        p_choice = st.selectbox("اختر المجلد الرئيسي", allowed_p)
-                        new_sub = st.text_input("اسم المجلد الفرعي الجديد").strip()
-                        if st.form_submit_button("إنشاء الفرعي"):
-                            if new_sub and p_choice:
-                                with get_connection() as conn:
-                                    cursor = conn.cursor()
-                                    try:
-                                        cursor.execute("INSERT INTO sub_folders (parent_folder, sub_folder_name, status) VALUES (?, ?, 'active')", (p_choice, new_sub))
-                                        conn.commit()
-                                        os.makedirs(os.path.join("storage", p_choice, new_sub), exist_ok=True)
-                                        log_activity(st.session_state.user, "CREATE_SUBFOLDER", "", f"{p_choice}/{new_sub}", "Created subfolder")
-                                        st.success(f"تم إنشاء الفرعي: {new_sub}")
-                                        st.rerun()
-                                    except Exception:
-                                        st.error("المجلد الفرعي موجود مسبقاً!")
+                with st.form("create_sub_folder_form", clear_on_submit=True):
+                    allowed_p = get_all_folders() if is_admin else st.session_state.allowed
+                    p_choice = st.selectbox("اختر المجلد الرئيسي", allowed_p)
+                    new_sub = st.text_input("اسم المجلد الفرعي الجديد").strip()
+                    if st.form_submit_button("إنشاء الفرعي"):
+                        if new_sub and p_choice:
+                            with get_connection() as conn:
+                                cursor = conn.cursor()
+                                try:
+                                    cursor.execute("INSERT INTO sub_folders (parent_folder, sub_folder_name, status) VALUES (?, ?, 'active')", (p_choice, new_sub))
+                                    conn.commit()
+                                    os.makedirs(os.path.join("storage", p_choice, new_sub), exist_ok=True)
+                                    log_activity(st.session_state.user, "CREATE_SUBFOLDER", "", f"{p_choice}/{new_sub}", "Created subfolder")
+                                    st.success(f"تم إنشاء الفرعي: {new_sub}")
+                                    st.rerun()
+                                except Exception:
+                                    st.error("المجلد الفرعي موجود مسبقاً!")
 
-            # ✅ "إدارة المجلدات" الداخلية (بدون st.container متداخل)
             st.markdown("⚙️ " + t['manage_folders'])
-            with st.container(border=True):
-                m_tab1, m_tab2 = st.tabs(["✏️ " + t['rename_tab'], "🗑️ " + t['delete_tab']])
-                
-                with m_tab1:
-                    m_type = st.radio("نوع المجلد", ["رئيسي", "فرعي"], horizontal=True, key="ren_type")
-                    if m_type == "رئيسي":
-                        if is_admin:
-                            cur_m = st.selectbox("اختر المجلد الرئيسي", get_all_folders(), key="ren_m_sel")
-                            ren_m_input = st.text_input("الاسم الجديد").strip()
-                            if st.button("حفظ الاسم الجديد"):
-                                if ren_m_input and cur_m:
-                                    with get_connection() as conn:
-                                        cursor = conn.cursor()
-                                        cursor.execute("UPDATE custom_folders SET folder_name = ? WHERE folder_name = ?", (ren_m_input, cur_m))
-                                        cursor.execute("UPDATE sub_folders SET parent_folder = ? WHERE parent_folder = ?", (ren_m_input, cur_m))
-                                        cursor.execute("UPDATE file_logs SET folder = REPLACE(folder, ?, ?) WHERE folder LIKE ?", (cur_m, ren_m_input, f"{cur_m}%"))
-                                        conn.commit()
-                                    old_path = os.path.join("storage", cur_m)
-                                    new_path = os.path.join("storage", ren_m_input)
-                                    if os.path.exists(old_path):
-                                        os.rename(old_path, new_path)
-                                    st.success("✅ تم تحديث اسم المجلد.")
-                                    st.rerun()
-                        else:
-                            st.info("فقط الأدمن يمكنه تعديل المجلد الرئيسي.")
+            m_tab1, m_tab2 = st.tabs(["✏️ " + t['rename_tab'], "🗑️ " + t['delete_tab']])
+            
+            with m_tab1:
+                m_type = st.radio("نوع المجلد", ["رئيسي", "فرعي"], horizontal=True, key="ren_type")
+                if m_type == "رئيسي":
+                    if is_admin:
+                        cur_m = st.selectbox("اختر المجلد الرئيسي", get_all_folders(), key="ren_m_sel")
+                        ren_m_input = st.text_input("الاسم الجديد").strip()
+                        if st.button("حفظ الاسم الجديد"):
+                            if ren_m_input and cur_m:
+                                with get_connection() as conn:
+                                    cursor = conn.cursor()
+                                    cursor.execute("UPDATE custom_folders SET folder_name = ? WHERE folder_name = ?", (ren_m_input, cur_m))
+                                    cursor.execute("UPDATE sub_folders SET parent_folder = ? WHERE parent_folder = ?", (ren_m_input, cur_m))
+                                    cursor.execute("UPDATE file_logs SET folder = REPLACE(folder, ?, ?) WHERE folder LIKE ?", (cur_m, ren_m_input, f"{cur_m}%"))
+                                    conn.commit()
+                                old_path = os.path.join("storage", cur_m)
+                                new_path = os.path.join("storage", ren_m_input)
+                                if os.path.exists(old_path):
+                                    os.rename(old_path, new_path)
+                                st.success("✅ تم تحديث اسم المجلد.")
+                                st.rerun()
                     else:
-                        cur_parent = st.selectbox("المجلد الرئيسي", get_all_folders(), key="ren_sub_p_sel")
-                        sub_list = get_subfolders(cur_parent)
-                        if sub_list:
-                            cur_s = st.selectbox("المجلد الفرعي", sub_list, key="ren_sub_sel")
-                            ren_s_input = st.text_input("الاسم الجديد").strip()
-                            if st.button("حفظ الاسم الجديد"):
-                                if ren_s_input and cur_s:
-                                    with get_connection() as conn:
-                                        cursor = conn.cursor()
-                                        cursor.execute("UPDATE sub_folders SET sub_folder_name = ? WHERE parent_folder = ? AND sub_folder_name = ?", (ren_s_input, cur_parent, cur_s))
-                                        old_tag = f"{cur_parent} / {cur_s}"
-                                        new_tag = f"{cur_parent} / {ren_s_input}"
-                                        cursor.execute("UPDATE file_logs SET folder = ? WHERE folder = ?", (new_tag, old_tag))
-                                        conn.commit()
-                                    old_path = os.path.join("storage", cur_parent, cur_s)
-                                    new_path = os.path.join("storage", cur_parent, ren_s_input)
-                                    if os.path.exists(old_path):
-                                        os.rename(old_path, new_path)
-                                    st.success("✅ تم تحديث المجلد الفرعي.")
-                                    st.rerun()
-                        else:
-                            st.caption("لا يوجد مجلدات فرعية.")
+                        st.info("فقط الأدمن يمكنه تعديل المجلد الرئيسي.")
+                else:
+                    cur_parent = st.selectbox("المجلد الرئيسي", get_all_folders(), key="ren_sub_p_sel")
+                    sub_list = get_subfolders(cur_parent)
+                    if sub_list:
+                        cur_s = st.selectbox("المجلد الفرعي", sub_list, key="ren_sub_sel")
+                        ren_s_input = st.text_input("الاسم الجديد").strip()
+                        if st.button("حفظ الاسم الجديد"):
+                            if ren_s_input and cur_s:
+                                with get_connection() as conn:
+                                    cursor = conn.cursor()
+                                    cursor.execute("UPDATE sub_folders SET sub_folder_name = ? WHERE parent_folder = ? AND sub_folder_name = ?", (ren_s_input, cur_parent, cur_s))
+                                    old_tag = f"{cur_parent} / {cur_s}"
+                                    new_tag = f"{cur_parent} / {ren_s_input}"
+                                    cursor.execute("UPDATE file_logs SET folder = ? WHERE folder = ?", (new_tag, old_tag))
+                                    conn.commit()
+                                old_path = os.path.join("storage", cur_parent, cur_s)
+                                new_path = os.path.join("storage", cur_parent, ren_s_input)
+                                if os.path.exists(old_path):
+                                    os.rename(old_path, new_path)
+                                st.success("✅ تم تحديث المجلد الفرعي.")
+                                st.rerun()
+                    else:
+                        st.caption("لا يوجد مجلدات فرعية.")
 
-                with m_tab2:
-                    del_m_type = st.radio("نوع المجلد", ["رئيسي (بكل محتوياته)", "فرعي فقط"], horizontal=True, key="del_m_type")
-                    now_t = datetime.now().strftime("%Y-%m-%d %H:%M")
-                    if del_m_type == "رئيسي (بكل محتوياته)":
-                        if is_admin:
-                            target_del_m = st.selectbox("المجلد الرئيسي للحذف", get_all_folders(), key="target_del_m")
-                            if st.button("⚠️ نقل للمحذوفات", type="primary"):
-                                with get_connection() as conn:
-                                    cursor = conn.cursor()
-                                    cursor.execute("UPDATE custom_folders SET status = 'deleted', deleted_by = ?, deleted_at = ? WHERE folder_name = ?", (st.session_state.user, now_t, target_del_m))
-                                    cursor.execute("UPDATE sub_folders SET status = 'deleted', deleted_by = ?, deleted_at = ? WHERE parent_folder = ?", (st.session_state.user, now_t, target_del_m))
-                                    cursor.execute("UPDATE file_logs SET status = 'deleted', deleted_by = ?, deleted_at = ? WHERE folder LIKE ?", (st.session_state.user, now_t, f"{target_del_m}%"))
-                                    conn.commit()
-                                st.success(f"✅ تم نقل المجلد {target_del_m} إلى المحذوفات.")
-                                st.rerun()
-                        else:
-                            st.info("فقط الأدمن يمكنه الحذف.")
+            with m_tab2:
+                del_m_type = st.radio("نوع المجلد", ["رئيسي (بكل محتوياته)", "فرعي فقط"], horizontal=True, key="del_m_type")
+                now_t = datetime.now().strftime("%Y-%m-%d %H:%M")
+                if del_m_type == "رئيسي (بكل محتوياته)":
+                    if is_admin:
+                        target_del_m = st.selectbox("المجلد الرئيسي للحذف", get_all_folders(), key="target_del_m")
+                        if st.button("⚠️ نقل للمحذوفات", type="primary"):
+                            with get_connection() as conn:
+                                cursor = conn.cursor()
+                                cursor.execute("UPDATE custom_folders SET status = 'deleted', deleted_by = ?, deleted_at = ? WHERE folder_name = ?", (st.session_state.user, now_t, target_del_m))
+                                cursor.execute("UPDATE sub_folders SET status = 'deleted', deleted_by = ?, deleted_at = ? WHERE parent_folder = ?", (st.session_state.user, now_t, target_del_m))
+                                cursor.execute("UPDATE file_logs SET status = 'deleted', deleted_by = ?, deleted_at = ? WHERE folder LIKE ?", (st.session_state.user, now_t, f"{target_del_m}%"))
+                                conn.commit()
+                            st.success(f"✅ تم نقل المجلد {target_del_m} إلى المحذوفات.")
+                            st.rerun()
                     else:
-                        p_for_sub_del = st.selectbox("المجلد الرئيسي", get_all_folders(), key="p_for_sub_del")
-                        subs_to_del = get_subfolders(p_for_sub_del)
-                        if subs_to_del:
-                            target_del_sub = st.selectbox("المجلد الفرعي", subs_to_del, key="target_del_sub")
-                            if st.button("⚠️ نقل للمحذوفات", type="primary"):
-                                tag_sub = f"{p_for_sub_del} / {target_del_sub}"
-                                with get_connection() as conn:
-                                    cursor = conn.cursor()
-                                    cursor.execute("UPDATE sub_folders SET status = 'deleted', deleted_by = ?, deleted_at = ? WHERE parent_folder = ? AND sub_folder_name = ?", (st.session_state.user, now_t, p_for_sub_del, target_del_sub))
-                                    cursor.execute("UPDATE file_logs SET status = 'deleted', deleted_by = ?, deleted_at = ? WHERE folder = ?", (st.session_state.user, now_t, tag_sub))
-                                    conn.commit()
-                                st.success(f"✅ تم نقل الفرعي {target_del_sub} إلى المحذوفات.")
-                                st.rerun()
-                        else:
-                            st.caption("لا يوجد مجلدات فرعية.")
+                        st.info("فقط الأدمن يمكنه الحذف.")
+                else:
+                    p_for_sub_del = st.selectbox("المجلد الرئيسي", get_all_folders(), key="p_for_sub_del")
+                    subs_to_del = get_subfolders(p_for_sub_del)
+                    if subs_to_del:
+                        target_del_sub = st.selectbox("المجلد الفرعي", subs_to_del, key="target_del_sub")
+                        if st.button("⚠️ نقل للمحذوفات", type="primary"):
+                            tag_sub = f"{p_for_sub_del} / {target_del_sub}"
+                            with get_connection() as conn:
+                                cursor = conn.cursor()
+                                cursor.execute("UPDATE sub_folders SET status = 'deleted', deleted_by = ?, deleted_at = ? WHERE parent_folder = ? AND sub_folder_name = ?", (st.session_state.user, now_t, p_for_sub_del, target_del_sub))
+                                cursor.execute("UPDATE file_logs SET status = 'deleted', deleted_by = ?, deleted_at = ? WHERE folder = ?", (st.session_state.user, now_t, tag_sub))
+                                conn.commit()
+                            st.success(f"✅ تم نقل الفرعي {target_del_sub} إلى المحذوفات.")
+                            st.rerun()
+                    else:
+                        st.caption("لا يوجد مجلدات فرعية.")
 
     # ----------------------------------------------------
     # 3. التقارير والرقابة (التبويبة الثالثة)
@@ -762,57 +754,54 @@ else:
     with tabs[2]:
         st.title("📊 " + t['nav_reports'])
         
-        # ✅ العنوان فوق، والـ expander فارغ
         if is_admin:
             st.markdown(f"**{t['restore_msg']}**")
-            with st.expander(""):
-                with get_connection() as conn:
-                    cursor = conn.cursor()
-                    cursor.execute("SELECT id, title, created_by, created_at FROM reports WHERE status = 'archived' ORDER BY created_at DESC")
-                    archived_reports = cursor.fetchall()
-                if archived_reports:
-                    for r_id, r_title, r_creator, r_date in archived_reports:
-                        col_a1, col_a2, col_a3 = st.columns([3, 1, 1])
-                        col_a1.markdown(f"📄 **{r_title}**")
-                        if col_a2.button("♻️ استرجاع", key=f"restore_{r_id}"):
-                            with get_connection() as conn:
-                                conn.cursor().execute("UPDATE reports SET status = 'active' WHERE id = ?", (r_id,))
-                                conn.commit()
-                            st.success("تم استرجاع التقرير.")
-                            st.rerun()
-                        if col_a3.button("🗑️ حذف نهائي", key=f"hard_del_{r_id}", type="primary"):
-                            with get_connection() as conn:
-                                conn.cursor().execute("DELETE FROM reports WHERE id = ?", (r_id,))
-                                conn.cursor().execute("DELETE FROM report_items WHERE report_id = ?", (r_id,))
-                                conn.cursor().execute("DELETE FROM report_viewers WHERE report_id = ?", (r_id,))
-                                conn.commit()
-                            st.error("تم الحذف النهائي.")
-                            st.rerun()
-                else:
-                    st.caption("لا توجد تقارير مؤرشفة.")
+            with get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT id, title, created_by, created_at FROM reports WHERE status = 'archived' ORDER BY created_at DESC")
+                archived_reports = cursor.fetchall()
+            if archived_reports:
+                for r_id, r_title, r_creator, r_date in archived_reports:
+                    col_a1, col_a2, col_a3 = st.columns([3, 1, 1])
+                    col_a1.markdown(f"📄 **{r_title}**")
+                    if col_a2.button("♻️ استرجاع", key=f"restore_{r_id}"):
+                        with get_connection() as conn:
+                            conn.cursor().execute("UPDATE reports SET status = 'active' WHERE id = ?", (r_id,))
+                            conn.commit()
+                        st.success("تم استرجاع التقرير.")
+                        st.rerun()
+                    if col_a3.button("🗑️ حذف نهائي", key=f"hard_del_{r_id}", type="primary"):
+                        with get_connection() as conn:
+                            conn.cursor().execute("DELETE FROM reports WHERE id = ?", (r_id,))
+                            conn.cursor().execute("DELETE FROM report_items WHERE report_id = ?", (r_id,))
+                            conn.cursor().execute("DELETE FROM report_viewers WHERE report_id = ?", (r_id,))
+                            conn.commit()
+                        st.error("تم الحذف النهائي.")
+                        st.rerun()
+            else:
+                st.caption("لا توجد تقارير مؤرشفة.")
 
         if is_admin or is_manager:
             st.markdown(f"**{t['create_report']}**")
-            with st.expander(""):
-                with st.form("create_report_form", clear_on_submit=True):
-                    r_title = st.text_input("عنوان التقرير")
-                    r_desc = st.text_area("وصف التقرير")
-                    all_active_users = [u[0] for u in get_all_users() if u[7] == 'active' and u[0] != st.session_state.user]
-                    selected_viewers = st.multiselect("المستخدمين المسموح لهم بالمشاهدة:", all_active_users)
-                    if st.form_submit_button("إنشاء"):
-                        if r_title.strip():
-                            now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
-                            with get_connection() as conn:
-                                cursor = conn.cursor()
-                                cursor.execute("INSERT INTO reports (title, description, created_by, created_at, is_public) VALUES (?, ?, ?, ?, ?)", (r_title.strip(), r_desc.strip(), st.session_state.user, now_str, 0))
-                                report_id = cursor.lastrowid
-                                for viewer in selected_viewers:
-                                    cursor.execute("INSERT INTO report_viewers (report_id, viewer_username) VALUES (?, ?)", (report_id, viewer))
-                                conn.commit()
-                            st.success(f"تم إنشاء التقرير: {r_title}")
-                            st.rerun()
-                        else:
-                            st.error("يرجى كتابة عنوان.")
+            with st.form("create_report_form", clear_on_submit=True):
+                r_title = st.text_input("عنوان التقرير")
+                r_desc = st.text_area("وصف التقرير")
+                all_active_users = [u[0] for u in get_all_users() if u[7] == 'active' and u[0] != st.session_state.user]
+                selected_viewers = st.multiselect("المستخدمين المسموح لهم بالمشاهدة:", all_active_users)
+                if st.form_submit_button("إنشاء"):
+                    if r_title.strip():
+                        now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+                        with get_connection() as conn:
+                            cursor = conn.cursor()
+                            cursor.execute("INSERT INTO reports (title, description, created_by, created_at, is_public) VALUES (?, ?, ?, ?, ?)", (r_title.strip(), r_desc.strip(), st.session_state.user, now_str, 0))
+                            report_id = cursor.lastrowid
+                            for viewer in selected_viewers:
+                                cursor.execute("INSERT INTO report_viewers (report_id, viewer_username) VALUES (?, ?)", (report_id, viewer))
+                            conn.commit()
+                        st.success(f"تم إنشاء التقرير: {r_title}")
+                        st.rerun()
+                    else:
+                        st.error("يرجى كتابة عنوان.")
 
         with get_connection() as conn:
             cursor = conn.cursor()
@@ -845,47 +834,46 @@ else:
                     for item in all_items:
                         (i_id, i_title, i_user, i_stat, i_file, i_up_by, i_up_at, i_created, i_app_by, i_app_at) = item
                         
-                        with st.container(border=True):
-                            col1, col2 = st.columns([3, 1])
-                            col1.markdown(f"**{i_title}**")
-                            if i_stat == "pending":
-                                col2.warning("⏳ في انتظار الرفع")
-                            elif i_stat == "uploaded":
-                                col2.info("📤 تم الرفع")
-                            else:
-                                col2.success("✅ مقبول")
+                        col1, col2 = st.columns([3, 1])
+                        col1.markdown(f"**{i_title}**")
+                        if i_stat == "pending":
+                            col2.warning("⏳ في انتظار الرفع")
+                        elif i_stat == "uploaded":
+                            col2.info("📤 تم الرفع")
+                        else:
+                            col2.success("✅ مقبول")
 
-                            if i_file and os.path.exists(os.path.join("storage", "Reports", str(i_id), i_file)):
-                                with open(os.path.join("storage", "Reports", str(i_id), i_file), "rb") as f:
-                                    st.download_button("📥 تحميل", f, file_name=i_file, key=f"dl_item_{i_id}")
-                            
-                            can_approve = is_admin or r_creator == st.session_state.user
-                            if i_stat == "uploaded" and can_approve:
-                                if st.button(f"✅ قبول", key=f"app_{i_id}"):
+                        if i_file and os.path.exists(os.path.join("storage", "Reports", str(i_id), i_file)):
+                            with open(os.path.join("storage", "Reports", str(i_id), i_file), "rb") as f:
+                                st.download_button("📥 تحميل", f, file_name=i_file, key=f"dl_item_{i_id}")
+                        
+                        can_approve = is_admin or r_creator == st.session_state.user
+                        if i_stat == "uploaded" and can_approve:
+                            if st.button(f"✅ قبول", key=f"app_{i_id}"):
+                                now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+                                with get_connection() as conn:
+                                    conn.cursor().execute("UPDATE report_items SET status = 'approved', approved_by = ?, approved_at = ? WHERE id = ?", (st.session_state.user, now_str, i_id))
+                                    conn.commit()
+                                st.success("تم قبول البند.")
+                                st.rerun()
+                        
+                        if i_stat != "approved" and i_user == st.session_state.user:
+                            uploaded_file = st.file_uploader(f"رفع ملف", key=f"upl_{i_id}")
+                            if st.button(f"رفع وتحديث", key=f"btn_up_{i_id}"):
+                                if uploaded_file:
+                                    folder = os.path.join("storage", "Reports", str(i_id))
+                                    os.makedirs(folder, exist_ok=True)
+                                    path = os.path.join(folder, uploaded_file.name)
+                                    with open(path, "wb") as f:
+                                        f.write(uploaded_file.getbuffer())
                                     now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
                                     with get_connection() as conn:
-                                        conn.cursor().execute("UPDATE report_items SET status = 'approved', approved_by = ?, approved_at = ? WHERE id = ?", (st.session_state.user, now_str, i_id))
+                                        conn.cursor().execute("UPDATE report_items SET status = 'uploaded', file_name = ?, file_path = ?, uploaded_by = ?, uploaded_at = ? WHERE id = ?", (uploaded_file.name, path, st.session_state.user, now_str, i_id))
                                         conn.commit()
-                                    st.success("تم قبول البند.")
+                                    st.success("تم رفع الملف.")
                                     st.rerun()
-                            
-                            if i_stat != "approved" and i_user == st.session_state.user:
-                                uploaded_file = st.file_uploader(f"رفع ملف", key=f"upl_{i_id}")
-                                if st.button(f"رفع وتحديث", key=f"btn_up_{i_id}"):
-                                    if uploaded_file:
-                                        folder = os.path.join("storage", "Reports", str(i_id))
-                                        os.makedirs(folder, exist_ok=True)
-                                        path = os.path.join(folder, uploaded_file.name)
-                                        with open(path, "wb") as f:
-                                            f.write(uploaded_file.getbuffer())
-                                        now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
-                                        with get_connection() as conn:
-                                            conn.cursor().execute("UPDATE report_items SET status = 'uploaded', file_name = ?, file_path = ?, uploaded_by = ?, uploaded_at = ? WHERE id = ?", (uploaded_file.name, path, st.session_state.user, now_str, i_id))
-                                            conn.commit()
-                                        st.success("تم رفع الملف.")
-                                        st.rerun()
-                                    else:
-                                        st.error("اختر ملف أولاً.")
+                                else:
+                                    st.error("اختر ملف أولاً.")
                 
                 can_add_item = is_admin or r_creator == st.session_state.user
                 if can_add_item:
@@ -1046,8 +1034,7 @@ else:
                     st.info("لا توجد حسابات محذوفة.")
                 else:
                     for du in display_deleted_users:
-                        with st.container(border=True):
-                            st.markdown(f"🗑️ **{du[0]}** (حذف بواسطة: {du[8] or 'Unknown'} في {du[9] or '-'})")
+                        st.markdown(f"🗑️ **{du[0]}** (حذف بواسطة: {du[8] or 'Unknown'} في {du[9] or '-'})")
 
             if is_admin:
                 with tab_admin_settings:
