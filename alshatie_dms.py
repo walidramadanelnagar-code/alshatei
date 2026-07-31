@@ -30,7 +30,7 @@ if 'lang' not in st.session_state:
     st.session_state.lang = 'ar'
 
 # =============================================================
-# 🎨 التصميم النهائي (نسخة خالية من تداخل .arr)
+# 🎨 التصميم النهائي (جميع الشاشات، بدون تداخل)
 # =============================================================
 st.markdown(f"""
 <style>
@@ -640,7 +640,6 @@ else:
             
             col_f1, col_f2 = st.columns(2)
             with col_f1:
-                # ✅ تحايلة التخلص من .arr: استخدام st.markdown قبل الـ container
                 st.markdown(f"📁 {t['create_folder']}")
                 with st.container(border=True):
                     with st.form("create_main_folder_form", clear_on_submit=True):
@@ -660,7 +659,6 @@ else:
                                         st.error("المجلد موجود مسبقاً!")
 
             with col_f2:
-                # ✅ تحايلة التخلص من .arr: استخدام st.markdown قبل الـ container
                 st.markdown(f"➕ {t['create_sub']}")
                 with st.container(border=True):
                     with st.form("create_sub_folder_form", clear_on_submit=True):
@@ -681,7 +679,6 @@ else:
                                     except Exception:
                                         st.error("المجلد الفرعي موجود مسبقاً!")
 
-            # ✅ تحايلة التخلص من .arr: استخدام st.markdown قبل الـ container
             st.markdown(f"⚙️ {t['manage_folders']}")
             with st.container(border=True):
                 m_tab1, m_tab2 = st.tabs([t['rename_tab'], t['delete_tab']])
