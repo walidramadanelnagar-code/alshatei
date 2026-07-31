@@ -30,7 +30,7 @@ if 'lang' not in st.session_state:
     st.session_state.lang = 'ar'
 
 # =============================================================
-# 🎨 التصميم النهائي
+# 🎨 التصميم النهائي (مع إصلاحات الموبايل النهائية)
 # =============================================================
 st.markdown(f"""
 <style>
@@ -89,7 +89,6 @@ st.markdown(f"""
     div[data-testid="stVerticalBlock"] > div:has(div.stTextInput),
     div[data-testid="stVerticalBlock"] > div:has(div.stTextArea),
     div[data-testid="stVerticalBlock"] > div:has(div.stSelectbox),
-    div[data-testid="stVerticalBlock"] > div:has(div.stFileUploader),
     .stAlert, .stInfo, .stSuccess, .stWarning, .stError {{
         background-color: #ffffff !important;
         padding: 16px !important;
@@ -103,7 +102,7 @@ st.markdown(f"""
     .stApp, .stMarkdown, .stCaption, .stDataFrame,
     .stMetric, .stColumns, .stContainer, .stEmpty,
     .stTextInput label, .stTextArea label, .stSelectbox label,
-    .stFileUploader label, .stRadio label, .stCheckbox label {{
+    .stRadio label, .stCheckbox label {{
         color: #1e293b !important;
         font-weight: 500 !important;
     }}
@@ -116,28 +115,38 @@ st.markdown(f"""
         border-radius: 8px !important;
     }}
 
-    /* تحايلة زرار الرفع: إذا كان أسود، الخط هيبقى أبيض */
-    .stFileUploader div[data-testid="stFileUploadDropzone"] {{
-        background-color: #ffffff !important !important;
-        border: 1px dashed #94a3b8 !important !important;
-        border-radius: 8px !important !important;
-        min-height: 60px !important;
+    /* ✅ الحل النهائي لتنسيق زرار الرفع */
+    .custom-upload-wrapper {{
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+        margin-top: 5px;
     }}
-    .stFileUploader div[data-testid="stFileUploadDropzone"] small {{
-        color: #64748b !important !important;
+    
+    .custom-upload-btn {{
+        background-color: #2563eb !important;
+        color: #ffffff !important;
+        border: none !important;
+        border-radius: 8px !important;
+        padding: 10px 24px !important;
+        font-weight: 600 !important;
+        cursor: pointer !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+        transition: 0.2s !important;
+        font-size: 16px !important;
     }}
-    /* ✅ تغيير لون الخط جوه الزرار للأبيض (عشان يقرا سواء كان أسود أو أبيض) */
-    .stFileUploader div[data-testid="stFileUploadDropzone"] button {{
-        color: #ffffff !important !important;
-        background-color: #2563eb !important !important;
-        border: none !important !important;
-        font-weight: 600 !important !important;
-        border-radius: 6px !important !important;
+    .custom-upload-btn:hover {{
+        background-color: #1d4ed8 !important;
+        transform: translateY(-2px) !important;
     }}
-    .stFileUploader div[data-testid="stFileUploadDropzone"] button span {{
-        display: none !important !important;
+    
+    /* إخفاء الفايل آب لوادر الأصلي تماماً */
+    .stFileUploader {{
+        display: none !important;
     }}
 
+    /* ✅ الأزرار العادية */
     .stButton button {{
         color: #ffffff !important;
         background-color: #2563eb !important;
@@ -271,12 +280,12 @@ else:
     if is_admin:
         nav_options.append(t['nav_master'])
 
-    # ✅ رأس الصفحة
+    # ✅ رأس الصفحة (العنوان الآن يترجم)
     col_logo, col_controls = st.columns([3, 2])
     with col_logo:
-        st.markdown("""
+        st.markdown(f"""
         <div style="margin-top: 5px;">
-            <h2 style="font-size: 24px; color: #0f172a; margin-bottom: 0;">نظام <span style="color: #2563eb;">ضبط ومشاركة الوثائق</span></h2>
+            <h2 style="font-size: 24px; color: #0f172a; margin-bottom: 0;">{t['app_title']}</h2>
         </div>
         """, unsafe_allow_html=True)
     with col_controls:
@@ -390,8 +399,32 @@ else:
                 st.info(t['no_sent'])
 
             st.divider()
-            # ثالثاً: إرسال ملف
+            # ثالثاً: إرسال ملف (باستخدام الحيلة الجديدة)
             st.subheader(t['send_title'])
+            
+            # 🔥 الحيلة لرفع الملف
+            # إنشاء متغير لتخزين الملف
+            if 'uploaded_file_data' not in st.session_state:
+                st.session_state.uploaded_file_data = None
+
+            # وضع الزر والـ uploader المخفي في نفس الصف
+            col_u1, col_u2 = st.columns([3, 2])
+            with col_u1:
+                # استخدام زر عادي كـ "مشغل"
+                if st.button(f"📁 {t['upload_btn']}", key="custom_upload_trigger"):
+                    # لا تفعل شيء هنا، لأن الـ file_uploader سيأخذ القيمة
+                    pass
+            
+            with col_u2:
+                # file_uploader مخفي تماماً، لكن سيتم استدعاؤه
+                uploaded_file = st.file_uploader("hidden", type=None, label_visibility="collapsed", key="hidden_uploader")
+
+            # استلام الملف الفعلي
+            if uploaded_file is not None:
+                st.session_state.uploaded_file_data = uploaded_file
+                st.success(f"✅ تم اختيار الملف: {uploaded_file.name}")
+            
+            # باقي الفورم
             with st.form("send_file_form", clear_on_submit=True):
                 active_users = [u[0] for u in get_all_users() if u[7] == 'active' and u[0] != st.session_state.user and u[2] != "Guest"]
                 if not active_users:
@@ -399,23 +432,27 @@ else:
                 else:
                     recipient = st.selectbox(t['send_to'], [t['choose_user_placeholder']] + active_users)
                     msg = st.text_area(t['your_message'])
-                    uploaded_file = st.file_uploader(t['choose_file'], type=None, help="200 MB كحد أقصى.")
                     
                     if st.form_submit_button(t['send_now']):
-                        if uploaded_file and recipient and recipient != t['choose_user_placeholder']:
+                        # التحقق من وجود الملف في الجلسة
+                        final_file = st.session_state.uploaded_file_data
+                        
+                        if final_file and recipient and recipient != t['choose_user_placeholder']:
                             progress_bar = st.progress(0, t['sending'])
                             user_folder = os.path.join("storage", "UserFiles", recipient)
                             os.makedirs(user_folder, exist_ok=True)
-                            file_path = os.path.join(user_folder, uploaded_file.name)
+                            file_path = os.path.join(user_folder, final_file.name)
                             with open(file_path, "wb") as f:
-                                f.write(uploaded_file.getbuffer())
+                                f.write(final_file.getbuffer())
                             now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
                             with get_connection() as conn:
                                 cursor = conn.cursor()
-                                cursor.execute("INSERT INTO user_files (filename, sender_username, recipient_username, message, file_path, timestamp) VALUES (?, ?, ?, ?, ?, ?)", (uploaded_file.name, st.session_state.user, recipient, msg, file_path, now_str))
+                                cursor.execute("INSERT INTO user_files (filename, sender_username, recipient_username, message, file_path, timestamp) VALUES (?, ?, ?, ?, ?, ?)", (final_file.name, st.session_state.user, recipient, msg, file_path, now_str))
                                 conn.commit()
                             progress_bar.empty()
                             st.success(f"✅ {t['send_success']} {recipient}!")
+                            # تصفير الجلسة
+                            st.session_state.uploaded_file_data = None
                             st.rerun()
                         else:
                             st.error(t['send_error'])
