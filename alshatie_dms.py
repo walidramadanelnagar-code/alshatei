@@ -30,7 +30,7 @@ if 'lang' not in st.session_state:
     st.session_state.lang = 'ar'
 
 # =============================================================
-# 🎨 التصميم (نسخة متوسطة)
+# 🎨 التصميم النهائي (مع إصلاح ألوان الرفع)
 # =============================================================
 st.markdown(f"""
 <style>
@@ -116,6 +116,28 @@ st.markdown(f"""
         border-radius: 8px !important;
     }}
 
+    /* 🔥 إصلاح زر الرفع (إخفاء الكلمة المكررة وجعل الخط أبيض للدارك مود) */
+    .stFileUploader div[data-testid="stFileUploadDropzone"] {{
+        background-color: #1e293b !important !important; /* اجبار الخلفية على غامق */
+        border: 1px dashed #64748b !important !important;
+        border-radius: 8px !important !important;
+        min-height: 60px !important !important;
+    }}
+    .stFileUploader div[data-testid="stFileUploadDropzone"] small {{
+        color: #94a3b8 !important !important;
+    }}
+    .stFileUploader div[data-testid="stFileUploadDropzone"] button {{
+        color: #ffffff !important !important !important; /* اجبار الخط أبيض */
+        background-color: transparent !important !important !important;
+        border: 1px solid #ffffff !important !important !important;
+        font-weight: 600 !important !important !important;
+        border-radius: 6px !important !important !important;
+    }}
+    .stFileUploader div[data-testid="stFileUploadDropzone"] button span {{
+        display: none !important !important !important; /* 🔥 حذف الكلمة المكررة نهائياً */
+    }}
+
+    /* زر الإرسال العادي */
     .stButton button {{
         color: #ffffff !important;
         background-color: #2563eb !important;
@@ -368,13 +390,8 @@ else:
                 st.info(t['no_sent'])
 
             st.divider()
-            # ثالثاً: إرسال ملف (باستخدام الحيلة النهائية)
+            # ثالثاً: إرسال ملف
             st.subheader(t['send_title'])
-            
-            # استخدام متغير حالة لتخزين الملف
-            if 'uploaded_file' not in st.session_state:
-                st.session_state.uploaded_file = None
-
             with st.form("send_file_form", clear_on_submit=True):
                 active_users = [u[0] for u in get_all_users() if u[7] == 'active' and u[0] != st.session_state.user and u[2] != "Guest"]
                 if not active_users:
@@ -383,31 +400,24 @@ else:
                     recipient = st.selectbox(t['send_to'], [t['choose_user_placeholder']] + active_users)
                     msg = st.text_area(t['your_message'])
                     
-                    # 🔥 الحل السحري: وضع الـ file_uploader خارج الفورم، لكننا نستخدمه
-                    st.write("---")
+                    # ✅ استخدام file_uploader العادي
                     uploaded_file = st.file_uploader(t['choose_file'], type=None, help="200 MB كحد أقصى.")
                     
-                    if uploaded_file is not None:
-                        st.session_state.uploaded_file = uploaded_file
-                        st.success(f"تم اختيار الملف: {uploaded_file.name}")
-                    
                     if st.form_submit_button(t['send_now']):
-                        final_file = st.session_state.uploaded_file
-                        if final_file and recipient and recipient != t['choose_user_placeholder']:
+                        if uploaded_file and recipient and recipient != t['choose_user_placeholder']:
                             progress_bar = st.progress(0, t['sending'])
                             user_folder = os.path.join("storage", "UserFiles", recipient)
                             os.makedirs(user_folder, exist_ok=True)
-                            file_path = os.path.join(user_folder, final_file.name)
+                            file_path = os.path.join(user_folder, uploaded_file.name)
                             with open(file_path, "wb") as f:
-                                f.write(final_file.getbuffer())
+                                f.write(uploaded_file.getbuffer())
                             now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
                             with get_connection() as conn:
                                 cursor = conn.cursor()
-                                cursor.execute("INSERT INTO user_files (filename, sender_username, recipient_username, message, file_path, timestamp) VALUES (?, ?, ?, ?, ?, ?)", (final_file.name, st.session_state.user, recipient, msg, file_path, now_str))
+                                cursor.execute("INSERT INTO user_files (filename, sender_username, recipient_username, message, file_path, timestamp) VALUES (?, ?, ?, ?, ?, ?)", (uploaded_file.name, st.session_state.user, recipient, msg, file_path, now_str))
                                 conn.commit()
                             progress_bar.empty()
                             st.success(f"✅ {t['send_success']} {recipient}!")
-                            st.session_state.uploaded_file = None
                             st.rerun()
                         else:
                             st.error(t['send_error'])
