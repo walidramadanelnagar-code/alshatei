@@ -749,60 +749,14 @@ else:
                         st.caption("لا يوجد مجلدات فرعية.")
 
     # ----------------------------------------------------
-    # 3. التقارير والرقابة (التبويبة الثالثة)
+    # 3. التقارير والرقابة (التبويبة الثالثة) - معدل
     # ----------------------------------------------------
     with tabs[2]:
         st.title("📊 " + t['nav_reports'])
         
-        if is_admin:
-            st.markdown(f"**{t['restore_msg']}**")
-            with get_connection() as conn:
-                cursor = conn.cursor()
-                cursor.execute("SELECT id, title, created_by, created_at FROM reports WHERE status = 'archived' ORDER BY created_at DESC")
-                archived_reports = cursor.fetchall()
-            if archived_reports:
-                for r_id, r_title, r_creator, r_date in archived_reports:
-                    col_a1, col_a2, col_a3 = st.columns([3, 1, 1])
-                    col_a1.markdown(f"📄 **{r_title}**")
-                    if col_a2.button("♻️ استرجاع", key=f"restore_{r_id}"):
-                        with get_connection() as conn:
-                            conn.cursor().execute("UPDATE reports SET status = 'active' WHERE id = ?", (r_id,))
-                            conn.commit()
-                        st.success("تم استرجاع التقرير.")
-                        st.rerun()
-                    if col_a3.button("🗑️ حذف نهائي", key=f"hard_del_{r_id}", type="primary"):
-                        with get_connection() as conn:
-                            conn.cursor().execute("DELETE FROM reports WHERE id = ?", (r_id,))
-                            conn.cursor().execute("DELETE FROM report_items WHERE report_id = ?", (r_id,))
-                            conn.cursor().execute("DELETE FROM report_viewers WHERE report_id = ?", (r_id,))
-                            conn.commit()
-                        st.error("تم الحذف النهائي.")
-                        st.rerun()
-            else:
-                st.caption("لا توجد تقارير مؤرشفة.")
-
-        if is_admin or is_manager:
-            st.markdown(f"**{t['create_report']}**")
-            with st.form("create_report_form", clear_on_submit=True):
-                r_title = st.text_input("عنوان التقرير")
-                r_desc = st.text_area("وصف التقرير")
-                all_active_users = [u[0] for u in get_all_users() if u[7] == 'active' and u[0] != st.session_state.user]
-                selected_viewers = st.multiselect("المستخدمين المسموح لهم بالمشاهدة:", all_active_users)
-                if st.form_submit_button("إنشاء"):
-                    if r_title.strip():
-                        now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
-                        with get_connection() as conn:
-                            cursor = conn.cursor()
-                            cursor.execute("INSERT INTO reports (title, description, created_by, created_at, is_public) VALUES (?, ?, ?, ?, ?)", (r_title.strip(), r_desc.strip(), st.session_state.user, now_str, 0))
-                            report_id = cursor.lastrowid
-                            for viewer in selected_viewers:
-                                cursor.execute("INSERT INTO report_viewers (report_id, viewer_username) VALUES (?, ?)", (report_id, viewer))
-                            conn.commit()
-                        st.success(f"تم إنشاء التقرير: {r_title}")
-                        st.rerun()
-                    else:
-                        st.error("يرجى كتابة عنوان.")
-
+        # =========================================================
+        # 1️⃣ أولاً: التقارير النشطة
+        # =========================================================
         with get_connection() as conn:
             cursor = conn.cursor()
             if is_admin:
@@ -822,31 +776,94 @@ else:
             st.info("لا توجد تقارير نشطة.")
         
         for r_id, r_title, r_desc, r_creator, r_date in reports_list:
-            st.markdown(f"**{r_title}**")
-            with st.expander(""):
+            # ✅ تقليل التوسيع: نعرض التقرير بشكل مضغوط
+            with st.expander(f"📋 {r_title} (بواسطة: {r_creator} - {r_date})"):
                 st.caption(r_desc if r_desc else "لا يوجد وصف.")
+                
+                # عرض البنود
                 with get_connection() as conn:
                     cur = conn.cursor()
                     cur.execute("SELECT id, title, assigned_to_username, status, file_name, uploaded_by, uploaded_at, created_at, approved_by, approved_at FROM report_items WHERE report_id = ? ORDER BY id ASC", (r_id,))
                     all_items = cur.fetchall()
                 
                 if all_items:
-                    for item in all_items:
+                    for idx, item in enumerate(all_items):
                         (i_id, i_title, i_user, i_stat, i_file, i_up_by, i_up_at, i_created, i_app_by, i_app_at) = item
                         
-                        col1, col2 = st.columns([3, 1])
-                        col1.markdown(f"**{i_title}**")
+                        # ✅ عرض البند بشكل مضغوط في صف واحد
+                        cols = st.columns([3, 2, 1, 1, 1, 1])
+                        cols[0].markdown(f"**{i_title}**")
+                        cols[1].caption(f"👤 {i_user}")
+                        
                         if i_stat == "pending":
-                            col2.warning("⏳ في انتظار الرفع")
+                            cols[2].warning("⏳")
                         elif i_stat == "uploaded":
-                            col2.info("📤 تم الرفع")
+                            cols[2].info("📤")
                         else:
-                            col2.success("✅ مقبول")
-
+                            cols[2].success("✅")
+                        
+                        # ✅ أزرار التعديل والحذف والترتيب (للمسؤول أو منشئ التقرير)
+                        can_manage = is_admin or r_creator == st.session_state.user
+                        
+                        if can_manage:
+                            # زر رفع للترتيب
+                            if idx > 0 and cols[3].button("⬆️", key=f"up_{r_id}_{i_id}"):
+                                with get_connection() as conn:
+                                    cursor = conn.cursor()
+                                    # تبديل الترتيب مع العنصر السابق
+                                    cursor.execute("SELECT id FROM report_items WHERE report_id = ? ORDER BY id ASC", (r_id,))
+                                    items_order = [row[0] for row in cursor.fetchall()]
+                                    if i_id in items_order:
+                                        pos = items_order.index(i_id)
+                                        if pos > 0:
+                                            # تبديل المعرفات مؤقتاً عن طريق تحديث الترتيب
+                                            cursor.execute("UPDATE report_items SET id = -id WHERE id = ?", (i_id,))
+                                            cursor.execute("UPDATE report_items SET id = -id WHERE id = ?", (items_order[pos-1],))
+                                            cursor.execute("UPDATE report_items SET id = ? WHERE id = ?", (items_order[pos-1], i_id))
+                                            cursor.execute("UPDATE report_items SET id = ? WHERE id = ?", (i_id, items_order[pos-1]))
+                                            conn.commit()
+                                    st.rerun()
+                            
+                            # زر خفض للترتيب
+                            if idx < len(all_items) - 1 and cols[4].button("⬇️", key=f"down_{r_id}_{i_id}"):
+                                with get_connection() as conn:
+                                    cursor = conn.cursor()
+                                    cursor.execute("SELECT id FROM report_items WHERE report_id = ? ORDER BY id ASC", (r_id,))
+                                    items_order = [row[0] for row in cursor.fetchall()]
+                                    if i_id in items_order:
+                                        pos = items_order.index(i_id)
+                                        if pos < len(items_order) - 1:
+                                            cursor.execute("UPDATE report_items SET id = -id WHERE id = ?", (i_id,))
+                                            cursor.execute("UPDATE report_items SET id = -id WHERE id = ?", (items_order[pos+1],))
+                                            cursor.execute("UPDATE report_items SET id = ? WHERE id = ?", (items_order[pos+1], i_id))
+                                            cursor.execute("UPDATE report_items SET id = ? WHERE id = ?", (i_id, items_order[pos+1]))
+                                            conn.commit()
+                                    st.rerun()
+                            
+                            # زر حذف البند
+                            if cols[5].button("🗑️", key=f"del_{r_id}_{i_id}"):
+                                st.session_state[f"confirm_del_item_{i_id}"] = True
+                            
+                            if st.session_state.get(f"confirm_del_item_{i_id}", False):
+                                st.warning(f"هل تريد حذف البند '{i_title}'؟")
+                                col_y, col_n = st.columns(2)
+                                if col_y.button("✅ نعم", key=f"yes_del_{i_id}"):
+                                    with get_connection() as conn:
+                                        conn.cursor().execute("DELETE FROM report_items WHERE id = ?", (i_id,))
+                                        conn.commit()
+                                    del st.session_state[f"confirm_del_item_{i_id}"]
+                                    st.success("تم حذف البند.")
+                                    st.rerun()
+                                if col_n.button("❌ إلغاء", key=f"no_del_{i_id}"):
+                                    del st.session_state[f"confirm_del_item_{i_id}"]
+                                    st.rerun()
+                        
+                        # عرض ملف إذا موجود
                         if i_file and os.path.exists(os.path.join("storage", "Reports", str(i_id), i_file)):
                             with open(os.path.join("storage", "Reports", str(i_id), i_file), "rb") as f:
-                                st.download_button("📥 تحميل", f, file_name=i_file, key=f"dl_item_{i_id}")
+                                st.download_button("📥 تحميل", f, file_name=i_file, key=f"dl_item_{i_id}", use_container_width=True)
                         
+                        # قبول البند (للمسؤول أو المنشئ)
                         can_approve = is_admin or r_creator == st.session_state.user
                         if i_stat == "uploaded" and can_approve:
                             if st.button(f"✅ قبول", key=f"app_{i_id}"):
@@ -857,6 +874,7 @@ else:
                                 st.success("تم قبول البند.")
                                 st.rerun()
                         
+                        # رفع ملف للبند (للمكلف فقط)
                         if i_stat != "approved" and i_user == st.session_state.user:
                             uploaded_file = st.file_uploader(f"رفع ملف", key=f"upl_{i_id}")
                             if st.button(f"رفع وتحديث", key=f"btn_up_{i_id}"):
@@ -875,13 +893,15 @@ else:
                                 else:
                                     st.error("اختر ملف أولاً.")
                 
+                # ✅ إضافة بند جديد للتقرير (مضغوط)
                 can_add_item = is_admin or r_creator == st.session_state.user
                 if can_add_item:
                     st.divider()
-                    with st.form(key=f"add_item_{r_id}"):
-                        item_title = st.text_input("عنوان البند")
-                        assign_user = st.selectbox("الموظف المكلف", [u[0] for u in get_all_users() if u[7] == 'active'])
-                        if st.form_submit_button("إضافة"):
+                    with st.form(key=f"add_item_{r_id}", clear_on_submit=True):
+                        col1, col2, col3 = st.columns([2, 2, 1])
+                        item_title = col1.text_input("عنوان البند", placeholder="أدخل عنوان البند...")
+                        assign_user = col2.selectbox("الموظف المكلف", [u[0] for u in get_all_users() if u[7] == 'active'], key=f"assign_{r_id}")
+                        if col3.form_submit_button("➕ إضافة"):
                             if item_title.strip():
                                 with get_connection() as conn:
                                     conn.cursor().execute("INSERT INTO report_items (report_id, title, assigned_to_username, status, created_at) VALUES (?, ?, ?, 'pending', ?)", (r_id, item_title.strip(), assign_user, datetime.now().strftime("%Y-%m-%d %H:%M")))
@@ -891,6 +911,7 @@ else:
                             else:
                                 st.error("اكتب عنواناً للبند.")
 
+                # ✅ إنهاء التقرير وأرشفته
                 if is_admin or r_creator == st.session_state.user:
                     st.markdown("---")
                     if st.button(f"🏁 إنهاء وأرشفة", key=f"complete_{r_id}", type="primary"):
@@ -899,6 +920,65 @@ else:
                             conn.commit()
                         st.success("تم أرشفة التقرير.")
                         st.rerun()
+
+        # =========================================================
+        # 2️⃣ ثانياً: إنشاء تقرير جديد (مضغوط)
+        # =========================================================
+        if is_admin or is_manager:
+            st.markdown("---")
+            with st.expander("➕ " + t['create_report'], expanded=False):
+                with st.form("create_report_form", clear_on_submit=True):
+                    col1, col2 = st.columns(2)
+                    r_title = col1.text_input("عنوان التقرير", placeholder="أدخل عنوان التقرير...")
+                    r_desc = col2.text_area("وصف التقرير", placeholder="وصف مختصر للتقرير...")
+                    all_active_users = [u[0] for u in get_all_users() if u[7] == 'active' and u[0] != st.session_state.user]
+                    selected_viewers = st.multiselect("المستخدمين المسموح لهم بالمشاهدة:", all_active_users)
+                    if st.form_submit_button("إنشاء التقرير", type="primary"):
+                        if r_title.strip():
+                            now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+                            with get_connection() as conn:
+                                cursor = conn.cursor()
+                                cursor.execute("INSERT INTO reports (title, description, created_by, created_at, is_public) VALUES (?, ?, ?, ?, ?)", (r_title.strip(), r_desc.strip(), st.session_state.user, now_str, 0))
+                                report_id = cursor.lastrowid
+                                for viewer in selected_viewers:
+                                    cursor.execute("INSERT INTO report_viewers (report_id, viewer_username) VALUES (?, ?)", (report_id, viewer))
+                                conn.commit()
+                            st.success(f"تم إنشاء التقرير: {r_title}")
+                            st.rerun()
+                        else:
+                            st.error("يرجى كتابة عنوان.")
+
+        # =========================================================
+        # 3️⃣ ثالثاً: أرشيف التقارير (في الآخر)
+        # =========================================================
+        if is_admin:
+            st.markdown("---")
+            st.markdown(f"**{t['restore_msg']}**")
+            with st.expander("📦 أرشيف التقارير", expanded=False):
+                with get_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT id, title, created_by, created_at FROM reports WHERE status = 'archived' ORDER BY created_at DESC")
+                    archived_reports = cursor.fetchall()
+                if archived_reports:
+                    for r_id, r_title, r_creator, r_date in archived_reports:
+                        col_a1, col_a2, col_a3 = st.columns([3, 1, 1])
+                        col_a1.markdown(f"📄 **{r_title}** (بواسطة: {r_creator} - {r_date})")
+                        if col_a2.button("♻️ استرجاع", key=f"restore_{r_id}"):
+                            with get_connection() as conn:
+                                conn.cursor().execute("UPDATE reports SET status = 'active' WHERE id = ?", (r_id,))
+                                conn.commit()
+                            st.success("تم استرجاع التقرير.")
+                            st.rerun()
+                        if col_a3.button("🗑️ حذف نهائي", key=f"hard_del_{r_id}", type="primary"):
+                            with get_connection() as conn:
+                                conn.cursor().execute("DELETE FROM reports WHERE id = ?", (r_id,))
+                                conn.cursor().execute("DELETE FROM report_items WHERE report_id = ?", (r_id,))
+                                conn.cursor().execute("DELETE FROM report_viewers WHERE report_id = ?", (r_id,))
+                                conn.commit()
+                            st.error("تم الحذف النهائي.")
+                            st.rerun()
+                else:
+                    st.caption("لا توجد تقارير مؤرشفة.")
 
     # ----------------------------------------------------
     # 4. إدارة المستخدمين (التبويبة الرابعة - إن وجدت)
