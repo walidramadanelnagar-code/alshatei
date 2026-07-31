@@ -11,6 +11,7 @@ import pandas as pd
 import streamlit as st
 
 from streamlit_extras.stylable_container import stylable_container
+from streamlit_theme import st_theme  # 👈 المكتبة الجديدة للتصميم
 
 from database import (
     init_db, log_activity, verify_user, 
@@ -31,147 +32,22 @@ st.markdown("""
 if 'font_size' not in st.session_state:
     st.session_state.font_size = 'medium'
 if 'font_color' not in st.session_state:
-    st.session_state.font_color = '#0f172a' # لون نص داكن جداً (كحلي غامق) للقراءة على الخلفية الفاتحة
+    st.session_state.font_color = '#1e293b' # لون نص داكن للقراءة على الخلفية الفاتحة
 
 # =============================================================
-# 🔥 تنسيق الألوان والـ CSS الكامل (تم إعادة كتابته بالكامل)
+# 🎨 تفعيل التصميم الجديد (بدون CSS معقد)
 # =============================================================
-font_size_map = {
-    "small": "14px",
-    "medium": "17px",
-    "large": "22px"
-}
-selected_font_size = font_size_map.get(st.session_state.font_size, "17px")
-text_color = st.session_state.font_color
-
-st.markdown(f"""
-    <style>
-    /* إخفاء عناصر Streamlit الافتراضية */
-    header {{visibility: hidden !important;}}
-    #MainMenu {{visibility: hidden !important;}}
-    footer {{visibility: hidden !important;}}
-    .stDeployButton {{display: none !important;}}
-    [data-testid="stStatusWidget"] {{visibility: hidden !important;}}
-    
-    /* ✅ 1. الخلفية العامة: رمادي بارد فاتح جداً (مريح للعين) */
-    .stApp {{ 
-        background-color: #f8fafc !important; 
-    }}
-    
-    /* ✅ 2. الشريط الجانبي (Sidebar): رمادي أغمق قليلاً للتمييز */
-    section[data-testid="stSidebar"] {{
-        background-color: #e2e8f0 !important;
-        border-right: 1px solid #cbd5e1;
-    }}
-    section[data-testid="stSidebar"] .stMarkdown,
-    section[data-testid="stSidebar"] .stRadio,
-    section[data-testid="stSidebar"] label {{
-        color: #1e293b !important; /* نص داكن جداً */
-    }}
-
-    /* ✅ 3. تنسيق النصوص والعناوين العامة (ليست مطفية) */
-    .stApp, .stMarkdown, .stCaption, .stDataFrame,
-    .stAlert, .stInfo, .stSuccess, .stWarning, .stError,
-    .stMetric, .stColumns, .stContainer, .stEmpty,
-    .stTextInput label, .stTextArea label, .stSelectbox label,
-    .stFileUploader label, .stRadio label, .stCheckbox label {{
-        color: #1e293b !important; /* نص كحلي غامق جدا */
-        font-size: {selected_font_size} !important;
-    }}
-
-    /* العناوين الرئيسية (H1, H2, H3) - لون سماوي/كهربي رائع */
-    h1, h2, h3, h4, h5, h6 {{
-        color: #2563eb !important; /* أزرق فاقع (Royal Blue) */
-        font-weight: 600 !important;
-    }}
-    
-    /* ✅ 4. مربعات الإدخال (النص والـ Uploader) - خلفية بيضاء ونص أسود */
-    .stTextInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"],
-    .stMultiSelect div[data-baseweb="select"], .stNumberInput input, .stDateInput input,
-    .stTimeInput input, .stFileUploader div, .stFileUploader label {{
-        background-color: #ffffff !important; /* أبيض ناصع */
-        color: #1e293b !important; /* نص كحلي غامق جدا */
-        border-radius: 10px !important;
-        border: 1px solid #cbd5e1 !important;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-    }}
-    
-    /* تعديل لون النص داخل الـ Uploader لما يكون فاضي */
-    .stFileUploader div[data-testid="stFileUploadDropzone"] {{
-        background-color: #ffffff !important;
-        border: 1px dashed #94a3b8 !important;
-    }}
-    .stFileUploader div[data-testid="stFileUploadDropzone"] small {{
-        color: #475569 !important;
-    }}
-
-    /* ✅ 5. الأزرار (الحل النهائي لمشكلة اختفاء النص والهوفر) */
-    .stButton button {{
-        color: #ffffff !important; /* النص أبيض دائماً */
-        background-color: #1e293b !important; /* خلفية كحلي غامق */
-        border-radius: 8px;
-        border: none;
-        padding: 10px 20px;
-        font-weight: 500;
-        transition: all 0.3s ease;
-        font-size: {selected_font_size} !important;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }}
-    
-    /* حالة الهوفر (عندما يجيء الماوس) - النص يفضل أبيض والخلفية تتغير للأزرق */
-    .stButton button:hover {{
-        color: #ffffff !important; /* النص يفضل أبيض */
-        background-color: #2563eb !important; /* يتحول للأزرق */
-        transform: translateY(-2px);
-        box-shadow: 0 6px 12px rgba(37, 99, 235, 0.3);
-    }}
-    
-    /* الأزرار الأساسية (Primary) */
-    .stButton button[kind="primary"] {{
-        background-color: #2563eb;
-    }}
-    .stButton button[kind="primary"]:hover {{
-        background-color: #1d4ed8;
-    }}
-
-    /* ✅ 6. الفوتر */
-    .custom-footer {{
-        position: fixed;
-        left: 0;
-        bottom: 0;
-        width: 100%;
-        background: rgba(255, 255, 255, 0.9);
-        color: #1e293b !important;
-        text-align: center;
-        padding: 12px 0;
-        font-size: 14px;
-        font-weight: 400;
-        border-top: 1px solid #cbd5e1;
-        z-index: 999;
-        backdrop-filter: blur(5px);
-    }}
-    .custom-footer span {{ color: #2563eb; font-weight: 600; }}
-    
-    /* ✅ شعار المجموعة */
-    .brand-text-container {{
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin-top: 40px;
-        margin-bottom: 5px;
-    }}
-    .brand-text {{
-        font-size: 38px;
-        font-weight: 700;
-        letter-spacing: 2px;
-        background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        text-shadow: 0px 4px 10px rgba(0,0,0,0.1);
-    }}
-    </style>
-""", unsafe_allow_html=True)
+# تم استخدام مكتبة st_theme لتعطيك خلفية رمادية باردة وشكل مودرن فوراً
+theme = st_theme(
+    theme="modern",           # اسم الثيم الجاهز (مودرن)
+    primary="#2563eb",        # اللون الرئيسي (أزرق ملكي)
+    background="#f4f6f8",     # لون الخلفية (رمادي بارد فاتح جداً)
+    secondary="#e2e8f0",      # لون الحواف والكروت
+    font="sans serif",        # نوع الخط
+    sidebar=True,             # تفعيل الشريط الجانبي
+    rounded=True,             # حواف مدورة للأزرار والمربعات
+)
+# =============================================================
 
 st.markdown("""
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -267,13 +143,13 @@ t = TRANSLATIONS[st.session_state.lang]
 if not st.session_state.logged_in:
     
     st.markdown("""
-    <div class="brand-text-container">
-        <div class="brand-text">مجموعة أعمال الشاطئ</div>
+    <div style="display: flex; justify-content: center; margin-top: 40px; margin-bottom: 10px;">
+        <h1 style="font-size: 42px; font-weight: 700; color: #2563eb;">مجموعة أعمال الشاطئ</h1>
     </div>
     """, unsafe_allow_html=True)
     
     st.markdown("""
-    <h1 style='text-align: center; font-size: 38px;'>
+    <h1 style='text-align: center; font-size: 34px;'>
         <i class="fas fa-lock-open" style="color: #2563eb; margin-right: 10px;"></i> 
         تسجيل الدخول للنظام
     </h1>
