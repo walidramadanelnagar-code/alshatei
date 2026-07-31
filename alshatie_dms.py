@@ -19,22 +19,6 @@ from translations import TRANSLATIONS
 
 st.set_page_config(page_title="نظام ضبط ومشاركة الوثائق - أعمال الشاطئ", layout="wide", initial_sidebar_state="collapsed")
 
-# =============================================================
-# 🛠️ إصلاح تداخل شاشة التقارير (حل ظاهري)
-# =============================================================
-st.markdown("""
-<style>
-    /* إخفاء الرموز المشوهة التي تظهر في الـ expander */
-    .stExpander .stMarkdown p {
-        display: none !important;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-st.markdown("""
-<link rel="icon" type="image/x-icon" href="static/favicon.ico">
-""", unsafe_allow_html=True)
-
 st.markdown("""
 <link rel="icon" type="image/x-icon" href="static/favicon.ico">
 """, unsafe_allow_html=True)
@@ -657,7 +641,6 @@ else:
             
             col_f1, col_f2 = st.columns(2)
             with col_f1:
-                # ✅ تم التعديل هنا: استبدال st.expander بـ st.container
                 st.markdown("📁 إنشاء مجلد رئيسي جديد")
                 with st.container(border=True):
                     with st.form("create_main_folder_form", clear_on_submit=True):
@@ -677,7 +660,6 @@ else:
                                         st.error("المجلد موجود مسبقاً!")
 
             with col_f2:
-                # ✅ تم التعديل هنا: استبدال st.expander بـ st.container
                 st.markdown("➕ إنشاء مجلد فرعي")
                 with st.container(border=True):
                     with st.form("create_sub_folder_form", clear_on_submit=True):
@@ -698,7 +680,6 @@ else:
                                     except Exception:
                                         st.error("المجلد الفرعي موجود مسبقاً!")
 
-            # ✅ تم التعديل هنا: استبدال st.expander بـ st.container
             st.markdown("⚙️ إدارة المجلدات")
             with st.container(border=True):
                 m_tab1, m_tab2 = st.tabs(["✏️ إعادة تسمية مجلد", "🗑️ نقل للمحذوفات"])
@@ -1025,10 +1006,10 @@ else:
     # 5. لوحة التقارير والرقابة
     # ----------------------------------------------------
     elif selected_screen == t["nav_reports"]:
-        st.title(t["nav_reports"])
+        st.title("📊 " + t["nav_reports"])
         
         if is_admin:
-            with st.expander("📦 أرشيف التقارير"):
+            with st.expander("أرشيف التقارير"): # 👈 تم إزالة الرمز
                 with get_connection() as conn:
                     cursor = conn.cursor()
                     cursor.execute("SELECT id, title, created_by, created_at FROM reports WHERE status = 'archived' ORDER BY created_at DESC")
@@ -1055,7 +1036,7 @@ else:
                     st.caption("لا توجد تقارير مؤرشفة.")
 
         if is_admin or is_manager:
-            with st.expander("➕ إنشاء تقرير جديد"):
+            with st.expander("إنشاء تقرير جديد"): # 👈 تم إزالة الرمز
                 with st.form("create_report_form", clear_on_submit=True):
                     r_title = st.text_input("عنوان التقرير")
                     r_desc = st.text_area("وصف التقرير")
@@ -1095,7 +1076,7 @@ else:
             st.info("لا توجد تقارير نشطة.")
         
         for r_id, r_title, r_desc, r_creator, r_date in reports_list:
-            with st.expander(f"📄 {r_title}"):
+            with st.expander(r_title): # 👈 تم إزالة الرمز
                 st.caption(r_desc if r_desc else "لا يوجد وصف.")
                 with get_connection() as conn:
                     cur = conn.cursor()
