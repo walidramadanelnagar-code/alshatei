@@ -628,9 +628,10 @@ else:
             st.subheader(t['manage_folders'])
             
             col_f1, col_f2 = st.columns(2)
+            
             with col_f1:
+                # ✅ بدون container متداخل، st.form هو المسؤول عن الكارت
                 st.markdown("📁 " + t['create_folder'])
-                # ✅ تمت إزالة الـ st.container المتداخل
                 with st.form("create_main_folder_form", clear_on_submit=True):
                     new_m = st.text_input("اسم المجلد الرئيسي الجديد").strip()
                     if st.form_submit_button("إنشاء"):
@@ -648,8 +649,8 @@ else:
                                     st.error("المجلد موجود مسبقاً!")
 
             with col_f2:
+                # ✅ بدون container متداخل
                 st.markdown("➕ " + t['create_sub'])
-                # ✅ تمت إزالة الـ st.container المتداخل
                 with st.form("create_sub_folder_form", clear_on_submit=True):
                     allowed_p = get_all_folders() if is_admin else st.session_state.allowed
                     p_choice = st.selectbox("اختر المجلد الرئيسي", allowed_p)
@@ -668,8 +669,8 @@ else:
                                 except Exception:
                                     st.error("المجلد الفرعي موجود مسبقاً!")
 
+            # ✅ "إدارة المجلدات" الداخلية (بدون st.container متداخل)
             st.markdown("⚙️ " + t['manage_folders'])
-            # ✅ تمت إزالة الـ st.container المتداخل هنا أيضاً
             with st.container(border=True):
                 m_tab1, m_tab2 = st.tabs(["✏️ " + t['rename_tab'], "🗑️ " + t['delete_tab']])
                 
