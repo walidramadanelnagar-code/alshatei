@@ -26,7 +26,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =============================================================
-# 🎨 إعدادات حجم ولون الخط (من داخل الـ Sidebar)
+# 🎨 إعدادات حجم ولون الخط
 # =============================================================
 if 'font_size' not in st.session_state:
     st.session_state.font_size = 'medium'
@@ -34,7 +34,7 @@ if 'font_color' not in st.session_state:
     st.session_state.font_color = '#1e293b'
 
 # =============================================================
-# 🎨 تنسيق الألوان والتصميم (CSS المعدل النهائي)
+# 🎨 تنسيق الألوان والتصميم (طبقة إضافية للموبايل والدارك مود)
 # =============================================================
 font_size_map = {
     "small": "14px",
@@ -95,15 +95,28 @@ st.markdown(f"""
     .stApp, .stMarkdown, .stCaption, .stDataFrame,
     .stMetric, .stColumns, .stContainer, .stEmpty,
     .stTextInput label, .stTextArea label, .stSelectbox label,
-    .stFileUploader label, .stRadio label, .stCheckbox label,
-    .stTextInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"],
-    .stMultiSelect div[data-baseweb="select"], .stNumberInput input, .stDateInput input,
-    .stTimeInput input, .stFileUploader div {{
+    .stFileUploader label, .stRadio label, .stCheckbox label {{
         color: {text_color} !important;
         font-size: {selected_font_size} !important;
         font-weight: 500 !important;
     }}
 
+    /* ✅ حل مشكلة الموبايل والدارك مود (إجبار الحقول على اللون الأبيض) */
+    .stTextInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"],
+    .stMultiSelect div[data-baseweb="select"], .stNumberInput input, .stDateInput input,
+    .stTimeInput input {{
+        background-color: #ffffff !important;
+        color: #1e293b !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 8px !important;
+        font-size: {selected_font_size} !important;
+    }}
+    
+    .stFileUploader div {{
+        background-color: #ffffff !important;
+        color: #1e293b !important;
+    }}
+    
     .stButton button {{
         color: #ffffff !important;
         background-color: #2563eb !important;
@@ -113,6 +126,7 @@ st.markdown(f"""
         font-weight: 600 !important;
         transition: all 0.3s ease !important;
         box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2) !important;
+        font-size: {selected_font_size} !important;
     }}
     .stButton button:hover {{
         background-color: #1d4ed8 !important;
@@ -234,15 +248,13 @@ if not st.session_state.logged_in:
 
 else:
     # =============================================================
-    # ✅ الشريط الجانبي (أزرار التنقل + الإعدادات) - الحل النهائي
+    # ✅ إعدادات الشريط الجانبي (أزرار التنقل)
     # =============================================================
     st.sidebar.markdown("## 🏢 لوحة التحكم")
     st.sidebar.markdown("---")
     
-    # 1. أزرار التنقل (بدون ترجمة مؤقتاً، للثبات)
     nav_options = ["الرئيسية", "إدارة الملفات", "المستخدمين", "التحكم", "التقارير"]
     
-    # تحديد الصفحة النشطة
     if 'current_page' not in st.session_state:
         st.session_state['current_page'] = nav_options[0]
 
@@ -252,7 +264,6 @@ else:
 
     selected_screen = st.session_state['current_page']
     
-    # 2. الإعدادات (داخل الشريط الجانبي، عشان ما يأكلوش مكان ولا يتضخموا)
     st.sidebar.markdown("---")
     st.sidebar.markdown("#### ⚙️ الإعدادات")
     col_s1, col_s2 = st.sidebar.columns([2, 2])
@@ -264,21 +275,12 @@ else:
         st.session_state.font_color = font_color_choice
     
     if st.sidebar.button("تطبيق الإعدادات", type="primary", use_container_width=True):
-        st.success("تم التطبيق!")
+        st.sidebar.success("تم التطبيق!")
         st.rerun()
 
     # =============================================================
-    # ✅ بداية المحتوى الرئيسي (Header + User)
+    # ✅ بداية المحتوى الرئيسي
     # =============================================================
-    # مساحة اللوجو
-    st.markdown("""
-    <div style="margin-top: 10px; margin-bottom: 10px;">
-        <h1 style="font-size: 32px; color: #0f172a; margin-bottom: 0;">نظام <span style="color: #2563eb;">ضبط ومشاركة الوثائق</span></h1>
-        <p style="color: #64748b; margin-top: 0; font-size: 14px;">المنصة المتكاملة لإدارة الملفات</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # معلومات المستخدم وزر الخروج
     col_user, col_logout = st.columns([8, 1])
     with col_user:
         st.write(f"👨‍💼 **مرحباً, {st.session_state.user}**")
