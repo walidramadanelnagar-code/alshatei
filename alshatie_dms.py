@@ -30,7 +30,7 @@ if 'lang' not in st.session_state:
     st.session_state.lang = 'ar'
 
 # =============================================================
-# 🎨 التصميم النهائي (حيلة إخفاء الـ Uploader)
+# 🎨 التصميم النهائي (إخفاء الـ uploader + زر مخصص)
 # =============================================================
 st.markdown(f"""
 <style>
@@ -115,7 +115,18 @@ st.markdown(f"""
         border-radius: 8px !important;
     }}
 
-    /* ✅ زر الرفع المخصص */
+    /* ✅ إخفاء زر الرفع الأصلي (حتى لا يترك فراغ) */
+    div[data-testid="stFileUploadDropzone"] {{
+        display: none !important !important;
+        height: 0px !important !important;
+        width: 0px !important !important;
+        padding: 0px !important !important;
+        margin: 0px !important !important;
+        border: none !important !important;
+        overflow: hidden !important !important;
+    }}
+
+    /* ✅ الأزرار العادية */
     .stButton button {{
         color: #ffffff !important;
         background-color: #2563eb !important;
@@ -368,29 +379,25 @@ else:
                 st.info(t['no_sent'])
 
             st.divider()
-            # ثالثاً: إرسال ملف (الحيلة النهائية)
+            # ثالثاً: إرسال ملف (حيلة الإخفاء الكامل + زر مخصص)
             st.subheader(t['send_title'])
             
-            # متغير الحالة للتعامل مع الملف
             if 'selected_file' not in st.session_state:
                 st.session_state.selected_file = None
 
-            # استخدام Column لتقسيم الزر والـ Uploader المخفي
-            st.write(f"**{t['choose_file']}**")
-            col1, col2 = st.columns([1, 1])
-            
-            with col1:
-                # زر عادي مخصص
-                if st.button(f"📁 اضغط هنا لاختيار ملف"):
-                    # لا يفعل شيء هنا، فقط لتحديث الحالة
-                    pass
+            # تخطيط الـ Label والزر (جمب بعضهم)
+            col_label, col_btn = st.columns([3, 1])
+            with col_label:
+                st.write(f"📎 **{t['choose_file']}**")
+            with col_btn:
+                if st.button("📤", use_container_width=True):
+                    pass # سيتم تفعيله عند رفع الملف
 
-            with col2:
-                # الـ File Uploader مخفي تماماً عن الأنظار
-                uploaded_file = st.file_uploader("", type=None, label_visibility="collapsed", key="hidden_uploader")
-                if uploaded_file is not None:
-                    st.session_state.selected_file = uploaded_file
-                    st.success(f"✅ تم اختيار الملف: {uploaded_file.name}")
+            # الجزء المخفي (مش هيظهر أبداً)
+            uploaded_file = st.file_uploader("", type=None, label_visibility="collapsed", key="hidden_uploader")
+            if uploaded_file is not None:
+                st.session_state.selected_file = uploaded_file
+                st.success(f"✅ تم اختيار الملف: {uploaded_file.name}")
 
             # حقول الإدخال العادية
             with st.form("send_file_form", clear_on_submit=True):
