@@ -30,7 +30,7 @@ if 'lang' not in st.session_state:
     st.session_state.lang = 'ar'
 
 # =============================================================
-# 🎨 التصميم النهائي (نسخة التغطية الكاملة)
+# 🎨 التصميم النهائي (نسخة الدمج الكامل)
 # =============================================================
 st.markdown(f"""
 <style>
@@ -90,7 +90,8 @@ st.markdown(f"""
     div[data-testid="stVerticalBlock"] > div:has(div.stTextArea),
     div[data-testid="stVerticalBlock"] > div:has(div.stSelectbox),
     div[data-testid="stVerticalBlock"] > div:has(div.stFileUploader),
-    .stAlert, .stInfo, .stSuccess, .stWarning, .stError {{
+    .stAlert, .stInfo, .stSuccess, .stWarning, .stError,
+    .stExpander, .stTabs {{
         background-color: #ffffff !important;
         padding: 16px !important;
         border-radius: 12px !important;
