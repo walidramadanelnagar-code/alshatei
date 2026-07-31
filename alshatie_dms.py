@@ -30,7 +30,7 @@ if 'lang' not in st.session_state:
     st.session_state.lang = 'ar'
 
 # =============================================================
-# 🎨 التصميم النهائي (جميع الشاشات، بدون تداخل)
+# 🎨 التصميم النهائي (دمج التصميم الجديد + حل التداخل)
 # =============================================================
 st.markdown(f"""
 <style>
@@ -90,8 +90,7 @@ st.markdown(f"""
     div[data-testid="stVerticalBlock"] > div:has(div.stTextArea),
     div[data-testid="stVerticalBlock"] > div:has(div.stSelectbox),
     div[data-testid="stVerticalBlock"] > div:has(div.stFileUploader),
-    .stAlert, .stInfo, .stSuccess, .stWarning, .stError,
-    .stExpander {{
+    .stAlert, .stInfo, .stSuccess, .stWarning, .stError {{
         background-color: #ffffff !important;
         padding: 16px !important;
         border-radius: 12px !important;
