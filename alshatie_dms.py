@@ -106,6 +106,14 @@ st.markdown(f"""
         border-radius: 8px !important;
     }}
 
+    /* ✅ إخفاء إطار الـ Form الداخلي المزعج */
+    .stForm {{
+        border: none !important;
+        box-shadow: none !important;
+        background-color: transparent !important;
+        padding: 0 !important;
+    }}
+
     /* ✅ الأزرار (أزرق ونص أبيض) */
     .stButton button {{
         color: #ffffff !important;
@@ -630,44 +638,46 @@ else:
             col_f1, col_f2 = st.columns(2)
             
             with col_f1:
-                # ✅ بدون container متداخل، st.form هو المسؤول عن الكارت
+                # ✅ حل مشكلة البراويز المتداخلة: استخدم container خارجي والـ form شفاف داخله
                 st.markdown("📁 " + t['create_folder'])
-                with st.form("create_main_folder_form", clear_on_submit=True):
-                    new_m = st.text_input("اسم المجلد الرئيسي الجديد").strip()
-                    if st.form_submit_button("إنشاء"):
-                        if new_m:
-                            with get_connection() as conn:
-                                cursor = conn.cursor()
-                                try:
-                                    cursor.execute("INSERT INTO custom_folders (folder_name, status) VALUES (?, 'active')", (new_m,))
-                                    conn.commit()
-                                    os.makedirs(os.path.join("storage", new_m), exist_ok=True)
-                                    log_activity(st.session_state.user, "CREATE_FOLDER", "", new_m, "Created main folder")
-                                    st.success(f"تم إنشاء المجلد: {new_m}")
-                                    st.rerun()
-                                except Exception:
-                                    st.error("المجلد موجود مسبقاً!")
+                with st.container(border=True):
+                    with st.form("create_main_folder_form", clear_on_submit=True):
+                        new_m = st.text_input("اسم المجلد الرئيسي الجديد").strip()
+                        if st.form_submit_button("إنشاء"):
+                            if new_m:
+                                with get_connection() as conn:
+                                    cursor = conn.cursor()
+                                    try:
+                                        cursor.execute("INSERT INTO custom_folders (folder_name, status) VALUES (?, 'active')", (new_m,))
+                                        conn.commit()
+                                        os.makedirs(os.path.join("storage", new_m), exist_ok=True)
+                                        log_activity(st.session_state.user, "CREATE_FOLDER", "", new_m, "Created main folder")
+                                        st.success(f"تم إنشاء المجلد: {new_m}")
+                                        st.rerun()
+                                    except Exception:
+                                        st.error("المجلد موجود مسبقاً!")
 
             with col_f2:
-                # ✅ بدون container متداخل
+                # ✅ حل مشكلة البراويز المتداخلة هنا أيضاً
                 st.markdown("➕ " + t['create_sub'])
-                with st.form("create_sub_folder_form", clear_on_submit=True):
-                    allowed_p = get_all_folders() if is_admin else st.session_state.allowed
-                    p_choice = st.selectbox("اختر المجلد الرئيسي", allowed_p)
-                    new_sub = st.text_input("اسم المجلد الفرعي الجديد").strip()
-                    if st.form_submit_button("إنشاء الفرعي"):
-                        if new_sub and p_choice:
-                            with get_connection() as conn:
-                                cursor = conn.cursor()
-                                try:
-                                    cursor.execute("INSERT INTO sub_folders (parent_folder, sub_folder_name, status) VALUES (?, ?, 'active')", (p_choice, new_sub))
-                                    conn.commit()
-                                    os.makedirs(os.path.join("storage", p_choice, new_sub), exist_ok=True)
-                                    log_activity(st.session_state.user, "CREATE_SUBFOLDER", "", f"{p_choice}/{new_sub}", "Created subfolder")
-                                    st.success(f"تم إنشاء الفرعي: {new_sub}")
-                                    st.rerun()
-                                except Exception:
-                                    st.error("المجلد الفرعي موجود مسبقاً!")
+                with st.container(border=True):
+                    with st.form("create_sub_folder_form", clear_on_submit=True):
+                        allowed_p = get_all_folders() if is_admin else st.session_state.allowed
+                        p_choice = st.selectbox("اختر المجلد الرئيسي", allowed_p)
+                        new_sub = st.text_input("اسم المجلد الفرعي الجديد").strip()
+                        if st.form_submit_button("إنشاء الفرعي"):
+                            if new_sub and p_choice:
+                                with get_connection() as conn:
+                                    cursor = conn.cursor()
+                                    try:
+                                        cursor.execute("INSERT INTO sub_folders (parent_folder, sub_folder_name, status) VALUES (?, ?, 'active')", (p_choice, new_sub))
+                                        conn.commit()
+                                        os.makedirs(os.path.join("storage", p_choice, new_sub), exist_ok=True)
+                                        log_activity(st.session_state.user, "CREATE_SUBFOLDER", "", f"{p_choice}/{new_sub}", "Created subfolder")
+                                        st.success(f"تم إنشاء الفرعي: {new_sub}")
+                                        st.rerun()
+                                    except Exception:
+                                        st.error("المجلد الفرعي موجود مسبقاً!")
 
             # ✅ "إدارة المجلدات" الداخلية (بدون st.container متداخل)
             st.markdown("⚙️ " + t['manage_folders'])
