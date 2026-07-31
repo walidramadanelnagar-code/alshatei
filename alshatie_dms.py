@@ -3,6 +3,7 @@ import sys
 import shutil
 import io
 import time
+import random
 from datetime import datetime
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -673,8 +674,8 @@ else:
                 if can_upload_here:
                     st.caption(f"📂 سيتم رفع الملف في المسار الحالي: **{current_display_folder_tag}**")
                     
-                    # ✅ استخدام key ديناميكي لتفريغ الحقل بعد الرفع
-                    upload_key = f"upload_main_file_{int(time.time())}"
+                    # ✅ استخدام key ديناميكي آمن لتفريغ الحقل بعد الرفع
+                    upload_key = f"upload_main_file_{int(time.time())}_{random.randint(1000, 9999)}"
                     uploaded_file = st.file_uploader(t['choose_file'], key=upload_key)
                     
                     if st.button(t['upload_file_btn']):
@@ -716,7 +717,7 @@ else:
                             progress_bar.empty()
                             st.success(msg)
                             time.sleep(0.5)
-                            st.rerun() # ✅ الـ Rerun ده هو اللي بيفرغ المربع
+                            st.rerun() # ✅ الـ Rerun ده بيعمل Refresh للواجهة وبيفرغ المربع
                         else:
                             st.error(t['upload_error'])
                 else:
@@ -735,8 +736,6 @@ else:
                 st.markdown("📁 " + t['create_folder'])
                 with st.form("create_main_folder_form", clear_on_submit=True):
                     new_m = st.text_input("اسم المجلد الرئيسي الجديد").strip()
-                    
-                    # ✅ تم إزالة اختيار المستخدمين من هنا (هيكون في تبويبة الصلاحيات فقط)
                     
                     if st.form_submit_button("إنشاء"):
                         if new_m:
@@ -829,7 +828,9 @@ else:
 
             with m_tab2:
                 st.subheader("👥 تعديل صلاحيات المجلدات")
-                target_perm_folder = st.selectbox("اختر المجلد الرئيسي لتعديل صلاحياته:", get_all_folders(), key="perm_sel")
+                # ✅ استخدام key مميز لضمان تفريغ القائمة عند التحديث
+                perm_sel_key = f"perm_sel_{int(time.time())}"
+                target_perm_folder = st.selectbox("اختر المجلد الرئيسي لتعديل صلاحياته:", get_all_folders(), key=perm_sel_key)
                 
                 if target_perm_folder:
                     all_active_users_for_perm = [u[0] for u in get_all_users() if u[7] == 'active' and u[0] != st.session_state.user and u[2] != "Guest"]
@@ -839,13 +840,15 @@ else:
                         cursor.execute("SELECT username FROM folder_permissions WHERE folder_name = ?", (target_perm_folder,))
                         current_permissions = [r[0] for r in cursor.fetchall()]
                     
-                    # ✅ ضمان عدم حدوث خطأ لو اليوزرز الحاليين مش موجودين جوا الاختيارات
+                    # ✅ أهم نقطة: التأكد إن اليوزرز اللي في default موجودين فعلاً عشان منقعش في خطأ
                     safe_defaults = [u for u in current_permissions if u in all_active_users_for_perm]
                     
+                    ms_key = f"perm_ms_{int(time.time())}"
                     new_selected_users = st.multiselect(
                         "المستخدمين المسموح لهم برؤية هذا المجلد:", 
                         all_active_users_for_perm, 
-                        default=safe_defaults
+                        default=safe_defaults,
+                        key=ms_key
                     )
                     
                     if st.button("تحديث الصلاحيات"):
