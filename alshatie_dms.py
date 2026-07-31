@@ -18,7 +18,7 @@ from database import (
     get_connection, hash_password
 )
 
-st.set_page_config(page_title="نظام ضبط ومشاركة الوثائق - أعمال الشاطئ", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="نظام ضبط ومشاركة الوثائق - أعمال الشاطئ", layout="wide", initial_sidebar_state="collapsed")
 
 st.markdown("""
 <link rel="icon" type="image/x-icon" href="static/favicon.ico">
@@ -33,7 +33,7 @@ if 'font_color' not in st.session_state:
     st.session_state.font_color = '#1e293b'
 
 # =============================================================
-# 🎨 التصميم المحسن (نسخة نهائية للموبايل والكمبيوتر)
+# 🎨 التصميم المحسن (نسخة خاصة بالكمبيوتر والموبايل)
 # =============================================================
 font_size_map = {
     "small": "14px",
@@ -59,19 +59,47 @@ st.markdown(f"""
     
     .stApp {{ background-color: #f1f5f9 !important; }}
     
+    /* إزالة أي شريط جانبي وتثبيت القائمة فوق */
     section[data-testid="stSidebar"] {{
-        background-color: #ffffff !important;
-        border-right: 1px solid #e2e8f0 !important;
-        box-shadow: 2px 0 10px rgba(0,0,0,0.02) !important;
-    }}
-    section[data-testid="stSidebar"] .stMarkdown,
-    section[data-testid="stSidebar"] label,
-    section[data-testid="stSidebar"] h1,
-    section[data-testid="stSidebar"] h2,
-    section[data-testid="stSidebar"] h3 {{
-        color: #0f172a !important;
+        display: none !important;
     }}
     
+    /* تنسيق أزرار التنقل فوق الصفحة (شكل أنيق) */
+    .nav-container {{
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        background-color: #ffffff;
+        padding: 12px 20px;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        margin-bottom: 20px;
+        margin-top: 10px;
+        justify-content: center;
+    }}
+    .nav-btn {{
+        background: #f1f5f9 !important;
+        color: #1e293b !important;
+        border: none !important;
+        padding: 8px 18px !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+        cursor: pointer !important;
+        transition: 0.3s !important;
+        font-size: 14px !important;
+    }}
+    .nav-btn-active {{
+        background: #2563eb !important;
+        color: #ffffff !important;
+    }}
+    .nav-btn:hover {{
+        background: #e2e8f0 !important;
+    }}
+    .nav-btn-active:hover {{
+        background: #1d4ed8 !important;
+    }}
+
     /* تنسيق الكروت (خلفية بيضاء) */
     div[data-testid="stVerticalBlock"] > div:has(div.stTextInput),
     div[data-testid="stVerticalBlock"] > div:has(div.stTextArea),
@@ -101,7 +129,7 @@ st.markdown(f"""
         font-weight: 500 !important;
     }}
 
-    /* حل مشكلة الموبايل والدارك مود (إجبار الحقول على الأبيض) */
+    /* حل مشكلة الموبايل (إجبار الحقول على الأبيض وإخفاء شريط الباسورد) */
     .stTextInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"],
     .stMultiSelect div[data-baseweb="select"], .stNumberInput input, .stDateInput input,
     .stTimeInput input {{
@@ -110,9 +138,23 @@ st.markdown(f"""
         border: 1px solid #e2e8f0 !important;
         border-radius: 8px !important;
         font-size: {selected_font_size} !important;
+        -webkit-appearance: none !important;
+        appearance: none !important;
+    }}
+    /* إخفاء زر العين المزعج في الباسورد على الموبايل */
+    input[type="password"]::-webkit-credentials-auto-fill-button,
+    input[type="password"]::-webkit-textfield-decoration-container {{
+        display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+        opacity: 0 !important;
+    }}
+    input[type="password"] {{
+        position: relative !important;
+        z-index: 1 !important;
     }}
 
-    /* إصلاح زرار الرفع */
+    /* إصلاح زرار الرفع (إجبار الخلفية بيضاء ومسح النص المتداخل) */
     .stFileUploader div[data-testid="stFileUploadDropzone"] {{
         background-color: #f8fafc !important;
         border: 1px dashed #94a3b8 !important;
@@ -124,11 +166,14 @@ st.markdown(f"""
     }}
     /* إخفاء النص الإنجليزي المزعج جوه الزرار */
     .stFileUploader div[data-testid="stFileUploadDropzone"] button {{
-        color: #2563eb !important;
-        background: #ffffff !important;
-        border: 1px solid #e2e8f0 !important;
+        color: #ffffff !important;
+        background: #2563eb !important;
+        border: none !important;
         font-weight: 600 !important;
         border-radius: 6px !important;
+    }}
+    .stFileUploader div[data-testid="stFileUploadDropzone"] button span {{
+        color: #ffffff !important;
     }}
 
     .stButton button {{
@@ -259,15 +304,14 @@ if not st.session_state.logged_in:
 
 else:
     # =============================================================
-    # ✅ الشريط الجانبي
+    # ✅ إعدادات الصفحة (اللوجو + أزرار التنقل فوق)
     # =============================================================
-    st.sidebar.markdown("## 🏢 لوحة التحكم")
-    st.sidebar.markdown("---")
     
     is_guest = (st.session_state.role == "guest")
     is_admin = (st.session_state.role == "Admin" or st.session_state.user == "admin")
     is_manager = (st.session_state.role == "Manager")
 
+    # تعريف أسماء الشاشات
     if is_guest:
         main_title = "📄 الوثائق والملفات العامة"
         files_screen_title = "📂 قاعدة الملفات"
@@ -282,46 +326,57 @@ else:
         nav_options.append("⚙️ لوحة التحكم الرئيسية")
     nav_options.append("📊 التقارير والرقابة")
 
+    # حفظ الشاشة الحالية
     if 'current_page' not in st.session_state:
         st.session_state['current_page'] = nav_options[0]
+    
+    # ✅ تخطيط رأس الصفحة (اللوجو + ترحيب + خروج)
+    col_logo, col_user = st.columns([3, 1])
+    with col_logo:
+        st.markdown("""
+        <div style="margin-top: 5px;">
+            <h2 style="font-size: 24px; color: #0f172a; margin-bottom: 0;">نظام <span style="color: #2563eb;">ضبط ومشاركة الوثائق</span></h2>
+        </div>
+        """, unsafe_allow_html=True)
+    with col_user:
+        col_u1, col_u2 = st.columns([3, 1])
+        with col_u1:
+            st.write(f"👨‍💼 **{st.session_state.user}**")
+        with col_u2:
+            if st.button("خروج", use_container_width=True):
+                log_activity(st.session_state.user, "LOGOUT", "", "System", "Logged out")
+                st.session_state.logged_in = False
+                st.session_state.user = None
+                st.session_state.allowed = []
+                st.session_state.role = "User"
+                st.rerun()
 
-    # عرض أزرار التنقل
+    # ✅ شريط التنقل (أزرار فوق الصفحة بدلاً من الشريط الجانبي)
+    st.markdown('<div class="nav-container">', unsafe_allow_html=True)
     for page in nav_options:
-        if st.sidebar.button(page, use_container_width=True):
-            st.session_state['current_page'] = page
+        # التحقق من الصفحة النشطة لتغيير اللون
+        active_class = 'nav-btn-active' if st.session_state.current_page == page else 'nav-btn'
+        if st.button(page, key=f"btn_{page}", use_container_width=False):
+            st.session_state.current_page = page
+            st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
     selected_screen = st.session_state['current_page']
     
-    # ✅ إعدادات الحجم واللون داخل الشريط الجانبي
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("#### ⚙️ الإعدادات")
-    
-    col_s1, col_s2 = st.sidebar.columns(2)
-    with col_s1:
+    # ✅ إعدادات الحجم واللون (فوق الصفحة)
+    st.markdown("---")
+    c1, c2, c3 = st.columns([3, 3, 1])
+    with c1:
         font_size_choice = st.selectbox("📏 الحجم", ["صغير", "متوسط", "كبير"], index=1, key="font_sel")
         st.session_state.font_size = {"صغير": "small", "متوسط": "medium", "كبير": "large"}[font_size_choice]
-    with col_s2:
+    with c2:
         font_color_choice = st.color_picker("🎨 اللون", st.session_state.font_color, key="color_pick")
         st.session_state.font_color = font_color_choice
-    
-    if st.sidebar.button("تطبيق الإعدادات", type="primary", use_container_width=True):
-        st.sidebar.success("تم التطبيق!")
-        st.rerun()
-
-    # =============================================================
-    # ✅ بداية المحتوى الرئيسي
-    # =============================================================
-    col_user, col_logout = st.columns([8, 1])
-    with col_user:
-        st.write(f"👨‍💼 **مرحباً, {st.session_state.user}**")
-    with col_logout:
-        if st.button("تسجيل خروج", use_container_width=True):
-            log_activity(st.session_state.user, "LOGOUT", "", "System", "Logged out")
-            st.session_state.logged_in = False
-            st.session_state.user = None
-            st.session_state.allowed = []
-            st.session_state.role = "User"
+    with c3:
+        if st.button("تطبيق", type="primary", use_container_width=True):
+            st.success("تم التطبيق!")
             st.rerun()
+    st.markdown("---")
 
     # =============================================================
     # 1. الشاشة الرئيسية
