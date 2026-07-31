@@ -15,7 +15,6 @@ from database import (
     get_all_users, get_all_folders, get_subfolders, 
     get_connection, hash_password
 )
-from translations import TRANSLATIONS
 
 st.set_page_config(page_title="نظام ضبط ومشاركة الوثائق - أعمال الشاطئ", layout="wide", initial_sidebar_state="collapsed")
 
@@ -24,13 +23,79 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =============================================================
-# 🎨 إعدادات اللغة
+# 🎨 إعدادات اللغة (الترجمة جوه الكود)
 # =============================================================
 if 'lang' not in st.session_state:
     st.session_state.lang = 'ar'
 
+t = {
+    'ar': {
+        'app_title': "نظام ضبط ومشاركة الوثائق",
+        'logout': "خروج",
+        'inbox_title': "📥 الملفات والمراسلات الواردة",
+        'sent_title': "📤 المراسلات الصادرة",
+        'send_title': "📤 إرسال ملف لزميل",
+        'send_to': "أرسل إلى (المستلم):",
+        'your_message': "رسالة مرافقة (اختياري):",
+        'choose_file': "📎 **اختر الملف لرفعه**",
+        'send_now': "إرسال الملف الآن",
+        'send_success': "تم إرسال الملف إلى",
+        'send_error': "يرجى اختيار مستلم صحيح ورفع ملف.",
+        'sending': "جاري الإرسال...",
+        'to_label': "مرسل إلى:",
+        'no_active_users': "لا يوجد مستخدمين نشطين.",
+        'nav_main_user': "📂 الملفات والمراسلات",
+        'nav_files': "📁 قاعدة الملفات",
+        'nav_users': "👤 إدارة المستخدمين",
+        'nav_master': "⚙️ لوحة التحكم الرئيسية",
+        'nav_reports': "📊 التقارير والرقابة",
+        'no_inbox': "لا توجد ملفات.",
+        'no_sent': "لا توجد مراسلات صادرة.",
+        'file_not_found': "الملف غير موجود",
+        'delete_btn': "🗑️ حذف",
+        'delete_success': "✅ تم حذف المراسلة من قائمتك.",
+        'create_folder': "📁 إنشاء مجلد جديد",
+        'create_sub': "➕ إنشاء مجلد فرعي",
+        'manage_folders': "⚙️ إدارة المجلدات",
+        'rename_tab': "✏️ إعادة تسمية مجلد",
+        'delete_tab': "🗑️ نقل للمحذوفات"
+    },
+    'en': {
+        'app_title': "Document Management & Sharing System",
+        'logout': "Logout",
+        'inbox_title': "📥 Incoming Messages",
+        'sent_title': "📤 Sent Messages",
+        'send_title': "📤 Send File to Colleague",
+        'send_to': "Send to (Recipient):",
+        'your_message': "Message (Optional):",
+        'choose_file': "📎 **Choose File to Upload**",
+        'send_now': "Send File Now",
+        'send_success': "File sent to",
+        'send_error': "Please select a valid recipient and upload a file.",
+        'sending': "Sending...",
+        'to_label': "To:",
+        'no_active_users': "No active users.",
+        'nav_main_user': "📂 Files & Messages",
+        'nav_files': "📁 File Base",
+        'nav_users': "👤 Users Management",
+        'nav_master': "⚙️ Main Dashboard",
+        'nav_reports': "📊 Reports & Oversight",
+        'no_inbox': "No files.",
+        'no_sent': "No sent messages.",
+        'file_not_found': "File not found",
+        'delete_btn': "🗑️ Delete",
+        'delete_success': "✅ Message deleted from your list.",
+        'create_folder': "📁 Create New Folder",
+        'create_sub': "➕ Create Subfolder",
+        'manage_folders': "⚙️ Manage Folders",
+        'rename_tab': "✏️ Rename Folder",
+        'delete_tab': "🗑️ Move to Trash"
+    }
+}
+curr_t = t['ar'] if st.session_state.lang == 'ar' else t['en']
+
 # =============================================================
-# 🎨 التصميم الجديد والممتد (النسخة النهائية)
+# 🎨 التصميم النهائي (مع إصلاح أزرار المجلدات)
 # =============================================================
 st.markdown(f"""
 <style>
@@ -50,7 +115,7 @@ st.markdown(f"""
     
     section[data-testid="stSidebar"] {{ display: none !important; }}
     
-    /* ✅ تنسيق أزرار التنقل (شكل الأزرار الأفقية) */
+    /* تنسيق أزرار التنقل */
     .stRadio > div {{
         display: flex !important;
         flex-wrap: wrap !important;
@@ -85,7 +150,7 @@ st.markdown(f"""
         display: none !important;
     }}
 
-    /* ✅ تنسيق الكروت البيضاء (لكل الشاشات) */
+    /* تنسيق الكروت */
     div[data-testid="stVerticalBlock"] > div:has(div.stTextInput),
     div[data-testid="stVerticalBlock"] > div:has(div.stTextArea),
     div[data-testid="stVerticalBlock"] > div:has(div.stSelectbox),
@@ -110,16 +175,35 @@ st.markdown(f"""
     }}
 
     .stTextInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"],
-    .stMultiSelect div[data-baseweb="select"], .stNumberInput input, .stDateInput input,
-    .stTimeInput input {{
+    .stMultiSelect div[data-baseweb="select"], .stNumberInput input {{
         background-color: #ffffff !important;
         color: #1e293b !important;
         border: 1px solid #e2e8f0 !important;
         border-radius: 8px !important;
     }}
 
-    /* ✅ الأزرار (أزرق ونص أبيض) */
-    .stButton button {{
+    /* ✅ إصلاح أزرار المجلدات (تبدو ككروت بيضاء) */
+    .stButton button.folder-btn {{
+        background-color: #ffffff !important !important;
+        color: #2563eb !important !important;
+        border: 1px solid #e2e8f0 !important !important;
+        border-radius: 8px !important !important;
+        padding: 12px 20px !important !important;
+        font-weight: 600 !important !important;
+        width: 100% !important !important;
+        text-align: right !important !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02) !important !important;
+        transition: 0.2s !important;
+    }}
+    .stButton button.folder-btn:hover {{
+        background-color: #f1f5f9 !important !important;
+        border-color: #2563eb !important !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05) !important;
+    }}
+
+    /* الأزرار العادية */
+    .stButton button:not(.folder-btn) {{
         color: #ffffff !important;
         background-color: #2563eb !important;
         border-radius: 8px !important;
@@ -128,7 +212,7 @@ st.markdown(f"""
         font-weight: 600 !important;
         transition: 0.3s;
     }}
-    .stButton button:hover {{ background-color: #1d4ed8 !important; transform: translateY(-2px); }}
+    .stButton button:not(.folder-btn):hover {{ background-color: #1d4ed8 !important; transform: translateY(-2px); }}
     
     .stButton button[kind="secondary"],
     .stButton button:not([kind]) {{ background-color: #1e293b !important; }}
@@ -230,10 +314,10 @@ if not st.session_state.logged_in:
             log_activity(username_input, "LOGIN", "", "System", "Logged into system")
             st.rerun()
         else:
-            st.error("خطأ في بيانات الدхول / Invalid Credentials")
+            st.error("خطأ في بيانات الدخول / Invalid Credentials")
 
 else:
-    t = TRANSLATIONS[st.session_state.lang]
+    curr_t = t['ar'] if st.session_state.lang == 'ar' else t['en']
 
     is_guest = (st.session_state.role == "guest")
     is_admin = (st.session_state.role == "Admin" or st.session_state.user == "admin")
@@ -243,22 +327,22 @@ else:
         main_title = "📄 الوثائق والملفات العامة"
         files_screen_title = "📂 قاعدة الملفات"
     else:
-        main_title = t['nav_main_user']
-        files_screen_title = "📁 قاعدة الملفات"
+        main_title = curr_t['nav_main_user']
+        files_screen_title = curr_t['nav_files']
     
     nav_options = [main_title, files_screen_title]
     if is_admin or is_manager:
-        nav_options.append(t['nav_users'])
+        nav_options.append(curr_t['nav_users'])
     if is_admin:
-        nav_options.append(t['nav_master'])
-    nav_options.append(t['nav_reports'])
+        nav_options.append(curr_t['nav_master'])
+    nav_options.append(curr_t['nav_reports'])
 
     # ✅ الرأس والتنقل
     col_logo, col_controls = st.columns([3, 2])
     with col_logo:
         st.markdown(f"""
         <div style="margin-top: 5px;">
-            <h2 style="font-size: 24px; color: #0f172a; margin-bottom: 0;">نظام <span style="color: #2563eb;">ضبط ومشاركة الوثائق</span></h2>
+            <h2 style="font-size: 24px; color: #0f172a; margin-bottom: 0;">{curr_t['app_title']}</h2>
         </div>
         """, unsafe_allow_html=True)
     with col_controls:
@@ -272,7 +356,7 @@ else:
                 st.session_state.lang = 'en'
                 st.rerun()
         with col_btn:
-            if st.button("خروج", use_container_width=True):
+            if st.button(curr_t['logout'], use_container_width=True):
                 log_activity(st.session_state.user, "LOGOUT", "", "System", "Logged out")
                 st.session_state.logged_in = False
                 st.session_state.user = None
@@ -311,23 +395,23 @@ else:
                     else:
                         st.caption("الملف غير موجود")
             else:
-                st.info("لا توجد ملفات.")
+                st.info(curr_t['no_inbox'])
 
         else:
-            st.subheader("📤 إرسال ملف لزميل")
+            st.subheader(curr_t['send_title'])
             with st.form("send_file_form", clear_on_submit=True):
                 active_users = [u[0] for u in get_all_users() if u[7] == 'active' and u[0] != st.session_state.user and u[2] != "Guest"]
                 
                 if not active_users:
-                    st.warning("لا يوجد مستخدمين نشطين.")
+                    st.warning(curr_t['no_active_users'])
                 else:
-                    recipient = st.selectbox("أرسل إلى (المستلم):", ["--- اختر المستخدم ---"] + active_users)
-                    msg = st.text_area("رسالة مرافقة (اختياري):")
-                    uploaded_file = st.file_uploader("📎 **اختر الملف لرفعه**", type=None, help="200 MB كحد أقصى.")
+                    recipient = st.selectbox(curr_t['send_to'], ["--- اختر المستخدم ---"] + active_users)
+                    msg = st.text_area(curr_t['your_message'])
+                    uploaded_file = st.file_uploader(curr_t['choose_file'], type=None, help="200 MB كحد أقصى.")
                     
-                    if st.form_submit_button("إرسال الملف الآن"):
+                    if st.form_submit_button(curr_t['send_now']):
                         if uploaded_file and recipient and recipient != "--- اختر المستخدم ---":
-                            progress_bar = st.progress(0, "جاري الإرسال...")
+                            progress_bar = st.progress(0, curr_t['sending'])
                             user_folder = os.path.join("storage", "UserFiles", recipient)
                             os.makedirs(user_folder, exist_ok=True)
                             file_path = os.path.join(user_folder, uploaded_file.name)
@@ -339,13 +423,13 @@ else:
                                 cursor.execute("INSERT INTO user_files (filename, sender_username, recipient_username, message, file_path, timestamp) VALUES (?, ?, ?, ?, ?, ?)", (uploaded_file.name, st.session_state.user, recipient, msg, file_path, now_str))
                                 conn.commit()
                             progress_bar.empty()
-                            st.success(f"✅ تم إرسال الملف إلى {recipient}!")
+                            st.success(f"✅ {curr_t['send_success']} {recipient}!")
                             st.rerun()
                         else:
-                            st.error("يرجى اختيار مستلم صحيح ورفع ملف أولاً.")
+                            st.error(curr_t['send_error'])
             
             st.divider()
-            st.subheader("📥 الملفات والمراسلات الواردة إلي")
+            st.subheader(curr_t['inbox_title'])
             with get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute("SELECT id, filename, sender_username, message, file_path, timestamp, deleted_by_sender, deleted_by_recipient FROM user_files WHERE recipient_username = ? AND deleted_by_recipient = 0 ORDER BY timestamp DESC", (st.session_state.user,))
@@ -362,18 +446,18 @@ else:
                             with open(f_path, "rb") as f:
                                 col3.download_button("⬇️ تحميل", f, file_name=f_name, key=f"dl_inbox_{msg_id}")
                         else:
-                            col3.caption("الملف غير موجود")
-                        if st.button(f"🗑️ حذف", key=f"del_msg_{msg_id}"):
+                            col3.caption(curr_t['file_not_found'])
+                        if st.button(curr_t['delete_btn'], key=f"del_msg_{msg_id}"):
                             with get_connection() as conn:
                                 conn.cursor().execute("UPDATE user_files SET deleted_by_recipient = 1 WHERE id = ?", (msg_id,))
                                 conn.commit()
-                            st.success("✅ تم حذف المراسلة من قائمتك.")
+                            st.success(curr_t['delete_success'])
                             st.rerun()
             else:
-                st.info("لا توجد مراسلات واردة.")
+                st.info(curr_t['no_inbox'])
 
             st.divider()
-            st.subheader("📤 المراسلات الصادرة")
+            st.subheader(curr_t['sent_title'])
             with get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute("SELECT id, filename, recipient_username, message, file_path, timestamp, deleted_by_sender, deleted_by_recipient FROM user_files WHERE sender_username = ? AND deleted_by_sender = 0 ORDER BY timestamp DESC", (st.session_state.user,))
@@ -383,22 +467,22 @@ else:
                     (msg_id, f_name, recipient, msg, f_path, time_str, del_s, del_r) = row
                     with st.container(border=True):
                         col1, col2, col3 = st.columns([2, 2, 1])
-                        col1.markdown(f"📄 **{f_name}** (مرسل إلى: {recipient})")
+                        col1.markdown(f"📄 **{f_name}** ({curr_t['to_label']} {recipient})")
                         col2.caption(f"🕒 {time_str}")
                         if msg: col2.caption(f"📝 {msg}")
                         if os.path.exists(f_path):
                             with open(f_path, "rb") as f:
                                 col3.download_button("⬇️ تحميل", f, file_name=f_name, key=f"dl_sent_{msg_id}")
                         else:
-                            col3.caption("الملف غير موجود")
-                        if st.button(f"🗑️ حذف", key=f"del_sent_{msg_id}"):
+                            col3.caption(curr_t['file_not_found'])
+                        if st.button(curr_t['delete_btn'], key=f"del_sent_{msg_id}"):
                             with get_connection() as conn:
                                 conn.cursor().execute("UPDATE user_files SET deleted_by_sender = 1 WHERE id = ?", (msg_id,))
                                 conn.commit()
-                            st.success("✅ تم حذف المراسلة من قائمتك.")
+                            st.success(curr_t['delete_success'])
                             st.rerun()
             else:
-                st.info("لا توجد مراسلات صادرة.")
+                st.info(curr_t['no_sent'])
 
     # ----------------------------------------------------
     # 2. إدارة الملفات والمجلدات
@@ -530,6 +614,7 @@ else:
                     allowed_folders = []
 
             for folder in allowed_folders:
+                # ✅ استخدام زر خاص بكلاس folder-btn عشان يبقى أبيض
                 if st.button(f"📂 {folder}", key=f"btn_enter_{folder}", use_container_width=True):
                     go_to_folder(folder, None)
                     st.rerun()
@@ -641,7 +726,7 @@ else:
             
             col_f1, col_f2 = st.columns(2)
             with col_f1:
-                with st.expander("📁 إنشاء مجلد رئيسي جديد"):
+                with st.expander(curr_t['create_folder']):
                     with st.form("create_main_folder_form", clear_on_submit=True):
                         new_m = st.text_input("اسم المجلد الرئيسي الجديد").strip()
                         if st.form_submit_button("إنشاء"):
@@ -659,7 +744,7 @@ else:
                                         st.error("المجلد موجود مسبقاً!")
 
             with col_f2:
-                with st.expander("➕ إنشاء مجلد فرعي"):
+                with st.expander(curr_t['create_sub']):
                     with st.form("create_sub_folder_form", clear_on_submit=True):
                         allowed_p = get_all_folders() if is_admin else st.session_state.allowed
                         p_choice = st.selectbox("اختر المجلد الرئيسي", allowed_p)
@@ -678,8 +763,8 @@ else:
                                     except Exception:
                                         st.error("المجلد الفرعي موجود مسبقاً!")
 
-            with st.expander("⚙️ إدارة المجلدات"):
-                m_tab1, m_tab2 = st.tabs(["✏️ إعادة تسمية مجلد", "🗑️ نقل للمحذوفات"])
+            with st.expander(curr_t['manage_folders']):
+                m_tab1, m_tab2 = st.tabs([curr_t['rename_tab'], curr_t['delete_tab']])
                 
                 with m_tab1:
                     m_type = st.radio("نوع المجلد", ["رئيسي", "فرعي"], horizontal=True, key="ren_type")
@@ -764,8 +849,8 @@ else:
     # ----------------------------------------------------
     # 3. إدارة المستخدمين
     # ----------------------------------------------------
-    elif selected_screen == t["nav_users"] and (is_admin or is_manager):
-        st.title(t["nav_users"])
+    elif selected_screen == curr_t['nav_users'] and (is_admin or is_manager):
+        st.title(curr_t['nav_users'])
         
         all_users_data = get_all_users()
         active_users_data = [u for u in all_users_data if u[7] == 'active']
@@ -934,8 +1019,8 @@ else:
     # ----------------------------------------------------
     # 4. لوحة التحكم الرئيسية
     # ----------------------------------------------------
-    elif selected_screen == t["nav_master"] and is_admin:
-        st.title(t["nav_master"])
+    elif selected_screen == curr_t['nav_master'] and is_admin:
+        st.title(curr_t['nav_master'])
         
         st.subheader("📊 سجل العمليات")
         with get_connection() as conn:
@@ -1002,8 +1087,8 @@ else:
     # ----------------------------------------------------
     # 5. لوحة التقارير والرقابة
     # ----------------------------------------------------
-    elif selected_screen == t["nav_reports"]:
-        st.title(t["nav_reports"])
+    elif selected_screen == curr_t['nav_reports']:
+        st.title(curr_t['nav_reports'])
         
         if is_admin:
             with st.expander("📦 أرشيف التقارير"):
