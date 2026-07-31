@@ -30,7 +30,7 @@ if 'lang' not in st.session_state:
     st.session_state.lang = 'ar'
 
 # =============================================================
-# 🎨 التصميم النهائي (النسخة الأخيرة)
+# 🎨 التصميم النهائي (نسخة الترجمة النظيفة)
 # =============================================================
 st.markdown(f"""
 <style>
@@ -132,14 +132,6 @@ st.markdown(f"""
     
     .stButton button[kind="secondary"],
     .stButton button:not([kind]) {{ background-color: #1e293b !important; }}
-
-    /* ✅ إصلاح عرض التقارير (إخفاء الرمز الإنجليزي) */
-    .stExpander div[data-testid="stExpander"] {{
-        font-family: 'Cairo', sans-serif !important;
-    }}
-    .stExpander div[data-testid="stExpander"] span {{
-        display: none !important !important; 
-    }}
 
     .custom-footer {{
         position: fixed;
@@ -254,13 +246,13 @@ else:
         main_title = t['nav_main_user']
         files_screen_title = t['nav_files']
     
-    # ✅ ترتيب الشاشات حسب طلبك: (الملفات -> الملفات -> التقارير -> المستخدمين -> التحكم)
+    # ✅ ترتيب الشاشات: (الملفات -> الملفات -> التقارير -> المستخدمين -> التحكم)
     nav_options = [main_title, files_screen_title]
-    nav_options.append(t['nav_reports'])  # التقارير الآن في المركز الثالث
+    nav_options.append(t['nav_reports'])
     if is_admin or is_manager:
-        nav_options.append(t['nav_users'])  # المستخدمين الآن في المركز الرابع
+        nav_options.append(t['nav_users'])
     if is_admin:
-        nav_options.append(t['nav_master'])  # التحكم الآن في المركز الخامس
+        nav_options.append(t['nav_master'])
 
     # ✅ الرأس والتنقل
     col_logo, col_controls = st.columns([3, 2])
@@ -779,8 +771,10 @@ else:
     elif selected_screen == t['nav_reports']:
         st.title("📊 " + t['nav_reports'])
         
+        # ✅ الحل النهائي: العنوان فوق، والـ expander فارغ
         if is_admin:
-            with st.expander(t['restore_msg']):
+            st.markdown(f"**{t['restore_msg']}**")
+            with st.expander(""): # فارغ، سيظهر السهم فقط
                 with get_connection() as conn:
                     cursor = conn.cursor()
                     cursor.execute("SELECT id, title, created_by, created_at FROM reports WHERE status = 'archived' ORDER BY created_at DESC")
@@ -807,7 +801,8 @@ else:
                     st.caption("لا توجد تقارير مؤرشفة.")
 
         if is_admin or is_manager:
-            with st.expander(t['create_report']):
+            st.markdown(f"**{t['create_report']}**")
+            with st.expander(""):
                 with st.form("create_report_form", clear_on_submit=True):
                     r_title = st.text_input("عنوان التقرير")
                     r_desc = st.text_area("وصف التقرير")
@@ -847,7 +842,8 @@ else:
             st.info("لا توجد تقارير نشطة.")
         
         for r_id, r_title, r_desc, r_creator, r_date in reports_list:
-            with st.expander(r_title):
+            st.markdown(f"**{r_title}**")
+            with st.expander(""):
                 st.caption(r_desc if r_desc else "لا يوجد وصف.")
                 with get_connection() as conn:
                     cur = conn.cursor()
