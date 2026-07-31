@@ -259,18 +259,18 @@ else:
     is_manager = (st.session_state.role == "Manager")
 
     if is_guest:
-        main_title = t['nav_files_guest']
-        files_screen_title = t['nav_files']
+        main_title = "📄 " + t['nav_files_guest']
+        files_screen_title = "📁 " + t['nav_files']
     else:
-        main_title = t['nav_main_user']
-        files_screen_title = t['nav_files']
+        main_title = "📂 " + t['nav_main_user']
+        files_screen_title = "📁 " + t['nav_files']
     
     nav_options = [main_title, files_screen_title]
     if is_admin or is_manager:
-        nav_options.append(t['nav_users'])
+        nav_options.append("👤 " + t['nav_users'])
     if is_admin:
-        nav_options.append(t['nav_master'])
-    nav_options.append(t['nav_reports'])
+        nav_options.append("⚙️ " + t['nav_master'])
+    nav_options.append("📊 " + t['nav_reports'])
 
     # ✅ الرأس والتنقل
     col_logo, col_controls = st.columns([3, 2])
@@ -656,11 +656,11 @@ else:
 
         st.markdown("---")
         if is_admin or is_manager:
-            st.subheader("📂 إدارة المجلدات")
+            st.subheader(t['manage_folders'])
             
             col_f1, col_f2 = st.columns(2)
             with col_f1:
-                with st.expander(t['create_folder']):
+                with st.expander("📁 " + t['create_folder']):
                     with st.form("create_main_folder_form", clear_on_submit=True):
                         new_m = st.text_input("اسم المجلد الرئيسي الجديد").strip()
                         if st.form_submit_button("إنشاء"):
@@ -678,7 +678,7 @@ else:
                                         st.error("المجلد موجود مسبقاً!")
 
             with col_f2:
-                with st.expander(t['create_sub']):
+                with st.expander("➕ " + t['create_sub']):
                     with st.form("create_sub_folder_form", clear_on_submit=True):
                         allowed_p = get_all_folders() if is_admin else st.session_state.allowed
                         p_choice = st.selectbox("اختر المجلد الرئيسي", allowed_p)
@@ -697,8 +697,8 @@ else:
                                     except Exception:
                                         st.error("المجلد الفرعي موجود مسبقاً!")
 
-            with st.expander(t['manage_folders']):
-                m_tab1, m_tab2 = st.tabs([t['rename_tab'], t['delete_tab']])
+            with st.expander("⚙️ " + t['manage_folders']):
+                m_tab1, m_tab2 = st.tabs(["✏️ " + t['rename_tab'], "🗑️ " + t['delete_tab']])
                 
                 with m_tab1:
                     m_type = st.radio("نوع المجلد", ["رئيسي", "فرعي"], horizontal=True, key="ren_type")
@@ -784,7 +784,7 @@ else:
     # 3. إدارة المستخدمين
     # ----------------------------------------------------
     elif selected_screen == t['nav_users'] and (is_admin or is_manager):
-        st.title(t['nav_users'])
+        st.title("👤 " + t['nav_users'])
         
         all_users_data = get_all_users()
         active_users_data = [u for u in all_users_data if u[7] == 'active']
@@ -846,9 +846,9 @@ else:
         st.divider()
 
         if is_admin:
-            tab_add, tab_edit, tab_deleted_list, tab_admin_settings = st.tabs([t['user_add_tab'], t['user_edit_tab'], t['user_deleted_list_tab'], t['admin_settings_tab']])
+            tab_add, tab_edit, tab_deleted_list, tab_admin_settings = st.tabs(["➕ " + t['user_add_tab'], "✏️ " + t['user_edit_tab'], "🗑️ " + t['user_deleted_list_tab'], "⚙️ " + t['admin_settings_tab']])
         else:
-            tab_add, tab_edit, tab_deleted_list = st.tabs([t['user_add_tab'], t['user_edit_tab'], t['user_deleted_list_tab']])
+            tab_add, tab_edit, tab_deleted_list = st.tabs(["➕ " + t['user_add_tab'], "✏️ " + t['user_edit_tab'], "🗑️ " + t['user_deleted_list_tab']])
 
         with tab_add:
             with st.form("user_add_form", clear_on_submit=True):
@@ -954,7 +954,7 @@ else:
     # 4. لوحة التحكم الرئيسية
     # ----------------------------------------------------
     elif selected_screen == t['nav_master'] and is_admin:
-        st.title(t['nav_master'])
+        st.title("⚙️ " + t['nav_master'])
         
         st.subheader("📊 سجل العمليات")
         with get_connection() as conn:
@@ -1022,7 +1022,7 @@ else:
     # 5. لوحة التقارير والرقابة
     # ----------------------------------------------------
     elif selected_screen == t['nav_reports']:
-        st.title(t['nav_reports'])
+        st.title("📊 " + t['nav_reports'])
         
         if is_admin:
             with st.expander("📦 أرشيف التقارير"):
