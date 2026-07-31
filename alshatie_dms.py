@@ -31,14 +31,14 @@ st.markdown("""
 if 'font_size' not in st.session_state:
     st.session_state.font_size = 'medium'
 if 'font_color' not in st.session_state:
-    st.session_state.font_color = '#1e293b'
+    st.session_state.font_color = '#1e293b' # لون نص كحلي غامق للقراءة
 
 # =============================================================
-# 🎨 تنسيق الألوان والتصميم (CSS مضمون 100%)
+# 🎨 تنسيق الألوان والتصميم الاحترافي (تم إعادة كتابته بالكامل)
 # =============================================================
 font_size_map = {
     "small": "14px",
-    "medium": "17px",
+    "medium": "17px", # تم رفع الحجم قليلاً
     "large": "22px"
 }
 selected_font_size = font_size_map.get(st.session_state.font_size, "17px")
@@ -46,90 +46,104 @@ text_color = st.session_state.font_color
 
 st.markdown(f"""
 <style>
-    /* إخفاء عناصر Streamlit الافتراضية */
+    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
+
+    /* ✅ إخفاء عناصر Streamlit الافتراضية المزعجة */
     header {{visibility: hidden !important;}}
     #MainMenu {{visibility: hidden !important;}}
     footer {{visibility: hidden !important;}}
     .stDeployButton {{display: none !important;}}
     [data-testid="stStatusWidget"] {{visibility: hidden !important;}}
     
-    /* الخلفية العامة: رمادي بارد فاتح جداً */
-    .stApp {{
-        background-color: #f4f6f8 !important;
+    /* ✅ تعيين خط Cairo للكتابة العربية الجميلة */
+    html, body, .stApp, .stMarkdown, h1, h2, h3, h4, h5, h6, div, span, p {{
+        font-family: 'Cairo', sans-serif !important;
     }}
     
-    /* الشريط الجانبي: رمادي أغمق قليلاً */
+    /* ✅ الخلفية العامة للصفحة (رمادي بارد جداً) */
+    .stApp {{
+        background-color: #f1f5f9 !important; 
+    }}
+    
+    /* ✅ الشريط الجانبي (رمادي أغمق قليلاً مع تفاصيل) */
     section[data-testid="stSidebar"] {{
-        background-color: #e2e8f0 !important;
-        border-right: 1px solid #cbd5e1;
+        background-color: #ffffff !important;
+        border-left: 1px solid #e2e8f0 !important;
+        box-shadow: 2px 0 10px rgba(0,0,0,0.02) !important;
     }}
     section[data-testid="stSidebar"] .stMarkdown,
     section[data-testid="stSidebar"] .stRadio,
-    section[data-testid="stSidebar"] label {{
-        color: #1e293b !important;
+    section[data-testid="stSidebar"] label,
+    section[data-testid="stSidebar"] h1,
+    section[data-testid="stSidebar"] h2,
+    section[data-testid="stSidebar"] h3 {{
+        color: #0f172a !important;
     }}
-
-    /* تنسيق النصوص العامة */
-    .stApp, .stMarkdown, .stCaption, .stDataFrame,
-    .stAlert, .stInfo, .stSuccess, .stWarning, .stError,
-    .stMetric, .stColumns, .stContainer, .stEmpty {{
+    
+    /* ✅ تنسيق بطاقات الكروت (كل جزء ليه خلفيته الخاصة) */
+    div[data-testid="stVerticalBlock"] > div:has(div.stTextInput),
+    div[data-testid="stVerticalBlock"] > div:has(div.stTextArea),
+    div[data-testid="stVerticalBlock"] > div:has(div.stSelectbox),
+    div[data-testid="stVerticalBlock"] > div:has(div.stFileUploader),
+    .stAlert, .stInfo, .stSuccess, .stWarning, .stError {{
+        background-color: #ffffff !important;
+        padding: 20px !important;
+        border-radius: 12px !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
+        border: 1px solid #e2e8f0 !important;
+        margin-bottom: 15px !important;
         color: {text_color} !important;
-        font-size: {selected_font_size} !important;
     }}
 
-    /* العناوين الرئيسية - لون أزرق ملكي */
+    /* ✅ خطوط العناوين الرئيسية */
     h1, h2, h3, h4, h5, h6 {{
         color: #2563eb !important;
-        font-weight: 600 !important;
+        font-weight: 700 !important;
     }}
     
-    /* عناوين الحقول (Labels) */
+    /* ✅ تنسيق النصوص العامة وتطبيق الحجم المختار (الحجم هيطبق على كل حاجة جوة الكروت) */
+    .stApp, .stMarkdown, .stCaption, .stDataFrame,
+    .stMetric, .stColumns, .stContainer, .stEmpty,
     .stTextInput label, .stTextArea label, .stSelectbox label,
     .stFileUploader label, .stRadio label, .stCheckbox label,
-    .stSlider label, .stNumberInput label, .stDateInput label,
-    .stTimeInput label {{
+    .stTextInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"],
+    .stMultiSelect div[data-baseweb="select"], .stNumberInput input, .stDateInput input,
+    .stTimeInput input {{
         color: {text_color} !important;
         font-size: {selected_font_size} !important;
-        font-weight: 500;
+        font-weight: 500 !important;
     }}
-    
-    /* الأزرار - حل مشكلة اختفاء النص */
+
+    /* ✅ الأزرار (مودرن وحواف مدورة) */
     .stButton button {{
-        color: #ffffff !important; /* النص أبيض دائماً */
-        background-color: #1e293b !important;
-        border-radius: 8px;
-        border: none;
-        padding: 8px 16px;
-        font-weight: 500;
-        transition: all 0.3s ease;
+        color: #ffffff !important;
+        background-color: #2563eb !important;
+        border-radius: 8px !important;
+        border: none !important;
+        padding: 10px 24px !important;
+        font-weight: 600 !important;
+        transition: all 0.3s ease !important;
         font-size: {selected_font_size} !important;
+        box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2) !important;
     }}
     
     .stButton button:hover {{
-        color: #ffffff !important;
-        background-color: #2563eb !important;
-        transform: translateY(-2px);
+        background-color: #1d4ed8 !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3) !important;
     }}
     
-    .stButton button[kind="primary"] {{
-        background-color: #2563eb;
+    /* زر تطبيق الإعدادات (اللون الغامق الخاص به) */
+    .stButton button[kind="secondary"],
+    .stButton button:not([kind]) {{
+        background-color: #1e293b !important;
     }}
-    .stButton button[kind="primary"]:hover {{
-        background-color: #1d4ed8;
+    .stButton button[kind="secondary"]:hover,
+    .stButton button:not([kind]):hover {{
+        background-color: #334155 !important;
     }}
 
-    /* مربعات الإدخال */
-    .stTextInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"],
-    .stMultiSelect div[data-baseweb="select"], .stNumberInput input, .stDateInput input,
-    .stTimeInput input, .stFileUploader div, .stFileUploader label {{
-        background-color: #ffffff !important;
-        color: {text_color} !important;
-        border-radius: 8px !important;
-        border: 1px solid #cbd5e1 !important;
-        font-size: {selected_font_size} !important;
-    }}
-    
-    /* الفوتر */
+    /* ✅ الفوتر */
     .custom-footer {{
         position: fixed;
         left: 0;
@@ -140,11 +154,16 @@ st.markdown(f"""
         text-align: center;
         padding: 12px 0;
         font-size: 14px;
-        border-top: 1px solid #cbd5e1;
+        border-top: 1px solid #e2e8f0;
         z-index: 999;
         backdrop-filter: blur(5px);
     }}
     .custom-footer span {{ color: #2563eb; font-weight: 600; }}
+    
+    /* ✅ إصلاح مسافات الشريط الجانبي */
+    .stRadio > div {{
+        padding-top: 10px !important;
+    }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -208,12 +227,12 @@ if guest_login:
         log_activity(guest_login, "LOGIN_AUTO", "", "System", "Auto-logged in via link")
 # =============================================================
 
-top_col1, top_col2, top_col3 = st.columns([6, 2, 2])
-
 # =============================================================
-# 🎨 واجهة اختيار حجم ولون الخط (في أعلى الصفحة)
+# 🎨 واجهة اختيار حجم ولون الخط (موجودة فوق، بشكل أنيق)
 # =============================================================
-with top_col1:
+# وضع الإعدادات في صف واحد أنيق
+c1, c2, c3 = st.columns([3, 3, 3])
+with c1:
     font_size_choice = st.selectbox(
         "📏 حجم الخط",
         ["صغير", "متوسط", "كبير"],
@@ -224,23 +243,25 @@ with top_col1:
     )
     st.session_state.font_size = {"صغير": "small", "متوسط": "medium", "كبير": "large"}[font_size_choice]
 
-with top_col2:
+with c2:
     font_color_choice = st.color_picker("🎨 لون النص", st.session_state.font_color, key="font_color_picker")
     st.session_state.font_color = font_color_choice
 
-if st.button("✅ تطبيق الإعدادات", type="primary"):
-    st.success("تم تطبيق حجم ولون الخط بنجاح!")
-    st.rerun()
+with c3:
+    if st.button("✅ تطبيق الإعدادات", type="primary"):
+        st.success("تم تطبيق حجم ولون الخط بنجاح!")
+        st.rerun()
 
-with top_col3:
-    lang_choice = st.selectbox("🌐 Language / اللغة", ["العربية", "English"], key="top_lang_select")
+col_lang = st.columns([1])[0]
+with col_lang:
+    lang_choice = st.selectbox("🌐 Language / اللغة", ["العربية", "English"])
     st.session_state.lang = 'en' if lang_choice == "English" else 'ar'
 
 t = TRANSLATIONS[st.session_state.lang]
 
 if not st.session_state.logged_in:
     st.markdown("""
-    <div style="display: flex; justify-content: center; margin-top: 40px; margin-bottom: 10px;">
+    <div style="display: flex; justify-content: center; margin-top: 40px; margin-bottom: 20px;">
         <h1 style="font-size: 42px; font-weight: 700; color: #2563eb;">مجموعة أعمال الشاطئ</h1>
     </div>
     """, unsafe_allow_html=True)
@@ -269,8 +290,11 @@ if not st.session_state.logged_in:
             st.error("خطأ في بيانات الدخول / Invalid Credentials")
 
 else:
-    with top_col2:
+    # عرض اسم المستخدم وزر الخروج في عمود أنيق
+    col_user, col_logout = st.columns([3, 1])
+    with col_user:
         st.write(f"👨‍💼 **{t['welcome']}, {st.session_state.user}**")
+    with col_logout:
         if st.button(t["logout"]):
             log_activity(st.session_state.user, "LOGOUT", "", "System", "Logged out")
             st.session_state.logged_in = False
@@ -298,8 +322,10 @@ else:
         nav_options.append(t["nav_master"])
     nav_options.append(t["nav_reports"])
         
-    st.sidebar.header("🔀 لوحة التحكم")
-    selected_screen = st.sidebar.radio("اختر الصفحة:", nav_options, index=0)
+    # ✅ تم إعادة التنقل إلى الشريط الجانبي بشكل واضح ومرتب
+    st.sidebar.markdown("## 🔀 لوحة التحكم")
+    st.sidebar.markdown("---")
+    selected_screen = st.sidebar.radio("اختر الصفحة للتنقل:", nav_options, index=0)
 
     # ----------------------------------------------------
     # 1. الشاشة الرئيسية
