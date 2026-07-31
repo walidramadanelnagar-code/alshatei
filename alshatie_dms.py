@@ -10,13 +10,12 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 import pandas as pd
 import streamlit as st
 
-from streamlit_extras.stylable_container import stylable_container
-
 from database import (
     init_db, log_activity, verify_user, 
     get_all_users, get_all_folders, get_subfolders, 
     get_connection, hash_password
 )
+from translations import TRANSLATIONS
 
 st.set_page_config(page_title="نظام ضبط ومشاركة الوثائق - أعمال الشاطئ", layout="wide", initial_sidebar_state="collapsed")
 
@@ -25,71 +24,10 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =============================================================
-# ✅ الترجمة المدمجة (مافيش KeyError تاني)
+# 🎨 إعدادات اللغة
 # =============================================================
 if 'lang' not in st.session_state:
     st.session_state.lang = 'ar'
-
-TRANSLATIONS = {
-    'ar': {
-        'welcome': "مرحباً",
-        'logout': "خروج",
-        'no_inbox': "لا توجد ملفات واردة.",
-        'no_sent': "لا توجد مراسلات صادرة.",
-        'file_not_found': "الملف غير موجود",
-        'delete_btn': "حذف",
-        'delete_success': "✅ تم حذف المراسلة.",
-        'inbox_title': "📥 الملفات والمراسلات الواردة إلي",
-        'sent_title': "📤 المراسلات الصادرة",
-        'send_title': "📤 إرسال ملف لزميل",
-        'send_to': "أرسل إلى (المستلم):",
-        'your_message': "رسالة مرافقة (اختياري):",
-        'choose_file': "📎 **اختر الملف لرفعه**",
-        'send_now': "إرسال الملف الآن",
-        'send_success': "تم إرسال الملف إلى",
-        'send_error': "يرجى اختيار مستلم ورفع ملف.",
-        'sending': "جاري الإرسال...",
-        'to_label': "مرسل إلى:",
-        'no_active_users': "لا يوجد مستخدمين نشطين.",
-        
-        # أسماء الشاشات
-        'nav_main_user': "📂 الملفات والمراسلات",
-        'nav_files': "📁 قاعدة الملفات",
-        'nav_users': "👤 إدارة المستخدمين",
-        'nav_master': "⚙️ لوحة التحكم الرئيسية",
-        'nav_reports': "📊 التقارير والرقابة",
-        'nav_files_guest': "📄 الوثائق والملفات العامة",
-    },
-    'en': {
-        'welcome': "Welcome",
-        'logout': "Logout",
-        'no_inbox': "No incoming messages.",
-        'no_sent': "No sent messages.",
-        'file_not_found': "File not found",
-        'delete_btn': "Delete",
-        'delete_success': "✅ Message deleted.",
-        'inbox_title': "📥 Incoming Messages",
-        'sent_title': "📤 Sent Messages",
-        'send_title': "📤 Send File to Colleague",
-        'send_to': "Send to (Recipient):",
-        'your_message': "Message (Optional):",
-        'choose_file': "📎 **Choose File to Upload**",
-        'send_now': "Send File Now",
-        'send_success': "File sent to",
-        'send_error': "Please select a recipient and upload a file.",
-        'sending': "Sending...",
-        'to_label': "To:",
-        'no_active_users': "No active users.",
-        
-        # Screen Names
-        'nav_main_user': "📂 Messages & Files",
-        'nav_files': "📁 Files Base",
-        'nav_users': "👤 Users Management",
-        'nav_master': "⚙️ Main Dashboard",
-        'nav_reports': "📊 Reports & Oversight",
-        'nav_files_guest': "📄 Public Documents",
-    }
-}
 
 # =============================================================
 # 🎨 التصميم النهائي
@@ -112,19 +50,7 @@ st.markdown(f"""
     
     section[data-testid="stSidebar"] {{ display: none !important; }}
     
-    /* ✅ تنسيق أزرار التنقل الأفقية */
-    .nav-container {{
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        background-color: #ffffff;
-        padding: 10px 15px;
-        border-radius: 12px;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        margin-bottom: 20px;
-    }}
-    
+    /* تنسيق أزرار التنقل */
     .stRadio > div {{
         display: flex !important;
         flex-wrap: wrap !important;
@@ -182,7 +108,6 @@ st.markdown(f"""
         font-weight: 500 !important;
     }}
 
-    /* حل مشكلة الموبايل */
     .stTextInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"],
     .stMultiSelect div[data-baseweb="select"] {{
         background-color: #ffffff !important;
@@ -191,7 +116,7 @@ st.markdown(f"""
         border-radius: 8px !important;
     }}
 
-    /* ✅ إصلاح زرار الرفع */
+    /* حل مشكلة زرار الرفع في الموبايل */
     .stFileUploader div[data-testid="stFileUploadDropzone"] {{
         background-color: #ffffff !important !important;
         border: 1px dashed #94a3b8 !important !important;
@@ -206,6 +131,7 @@ st.markdown(f"""
         border: 1px solid #e2e8f0 !important !important;
         font-weight: 600 !important !important;
         border-radius: 6px !important !important;
+        box-shadow: none !important !important;
     }}
     .stFileUploader div[data-testid="stFileUploadDropzone"] button span {{
         display: none !important !important;
@@ -325,7 +251,7 @@ if not st.session_state.logged_in:
 
 else:
     # =============================================================
-    # ✅ إعدادات الترجمة
+    # ✅ الترجمات وترتيب القائمة
     # =============================================================
     t = TRANSLATIONS[st.session_state.lang]
 
@@ -333,7 +259,6 @@ else:
     is_admin = (st.session_state.role == "Admin" or st.session_state.user == "admin")
     is_manager = (st.session_state.role == "Manager")
 
-    # ✅ أسماء الشاشات
     if is_guest:
         main_title = t['nav_files_guest']
         files_screen_title = t['nav_files']
@@ -348,8 +273,8 @@ else:
     if is_admin:
         nav_options.append(t['nav_master'])
 
-    # ✅ رأس الصفحة + خيار اللغة
-    col_logo, col_controls = st.columns([4, 2])
+    # ✅ رأس الصفحة
+    col_logo, col_controls = st.columns([3, 2])
     with col_logo:
         st.markdown("""
         <div style="margin-top: 5px;">
@@ -380,7 +305,7 @@ else:
     st.markdown("---")
 
     # =============================================================
-    # 1. الشاشة الرئيسية (الملفات والمراسلات)
+    # 1. الشاشة الرئيسية
     # =============================================================
     if selected_screen == main_title:
         st.title(main_title)
@@ -428,7 +353,7 @@ else:
                                 col3.download_button("⬇️ تحميل", f, file_name=f_name, key=f"dl_inbox_{msg_id}")
                         else:
                             col3.caption(t['file_not_found'])
-                        if st.button(f"🗑️ {t['delete_btn']}", key=f"del_msg_{msg_id}"):
+                        if st.button(t['delete_btn'], key=f"del_msg_{msg_id}"):
                             with get_connection() as conn:
                                 conn.cursor().execute("UPDATE user_files SET deleted_by_recipient = 1 WHERE id = ?", (msg_id,))
                                 conn.commit()
@@ -457,7 +382,7 @@ else:
                                 col3.download_button("⬇️ تحميل", f, file_name=f_name, key=f"dl_sent_{msg_id}")
                         else:
                             col3.caption(t['file_not_found'])
-                        if st.button(f"🗑️ {t['delete_btn']}", key=f"del_sent_{msg_id}"):
+                        if st.button(t['delete_btn'], key=f"del_sent_{msg_id}"):
                             with get_connection() as conn:
                                 conn.cursor().execute("UPDATE user_files SET deleted_by_sender = 1 WHERE id = ?", (msg_id,))
                                 conn.commit()
@@ -502,28 +427,28 @@ else:
     # =============================================================
     elif selected_screen == files_screen_title:
         st.title(files_screen_title)
-        st.info("جاري استعادة قاعدة الملفات والمجلدات (سيتم إضافتها قريباً).")
+        st.info(t['restore_msg'])
         
     # =============================================================
     # 3. التقارير والرقابة
     # =============================================================
     elif selected_screen == t['nav_reports']:
         st.title(t['nav_reports'])
-        st.info("جاري استعادة شاشة التقارير (سيتم إضافتها قريباً).")
+        st.info(t['restore_msg'])
         
     # =============================================================
     # 4. إدارة المستخدمين
     # =============================================================
     elif selected_screen == t['nav_users'] and (is_admin or is_manager):
         st.title(t['nav_users'])
-        st.info("جاري استعادة إدارة المستخدمين (سيتم إضافتها قريباً).")
+        st.info(t['restore_msg'])
         
     # =============================================================
     # 5. لوحة التحكم الرئيسية
     # =============================================================
     elif selected_screen == t['nav_master'] and is_admin:
         st.title(t['nav_master'])
-        st.info("جاري استعادة لوحة التحكم (سيتم إضافتها قريباً).")
+        st.info(t['restore_msg'])
 
 # =============================================================
 # الـ Footer
