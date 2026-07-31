@@ -1,5 +1,6 @@
 TRANSLATIONS = {
     'ar': {
+        'app_title': "نظام ضبط ومشاركة الوثائق",
         'welcome': "مرحباً",
         'logout': "خروج",
         'no_inbox': "لا توجد ملفات واردة.",
@@ -26,9 +27,11 @@ TRANSLATIONS = {
         'nav_master': "⚙️ لوحة التحكم الرئيسية",
         'nav_reports': "📊 التقارير والرقابة",
         'nav_files_guest': "📄 الوثائق والملفات العامة",
-        'restore_msg': "جاري استعادة هذه الشاشة بالكامل (سيتم إضافتها قريباً)."
+        'restore_msg': "جاري استعادة هذه الشاشة بالكامل (سيتم إضافتها قريباً).",
+        'upload_btn': "اختر ملف"
     },
     'en': {
+        'app_title': "Document Management & Sharing System",
         'welcome': "Welcome",
         'logout': "Logout",
         'no_inbox': "No incoming messages.",
@@ -55,6 +58,7 @@ TRANSLATIONS = {
         'nav_master': "⚙️ Main Dashboard",
         'nav_reports': "📊 Reports & Oversight",
         'nav_files_guest': "📄 Public Documents",
-        'restore_msg': "This screen is currently being restored (will be added soon)."
+        'restore_msg': "This screen is currently being restored (will be added soon).",
+        'upload_btn': "Choose File"
     }
 }
