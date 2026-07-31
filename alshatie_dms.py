@@ -12,7 +12,6 @@ import streamlit as st
 
 from streamlit_extras.stylable_container import stylable_container
 
-
 from database import (
     init_db, log_activity, verify_user, 
     get_all_users, get_all_folders, get_subfolders, 
@@ -32,29 +31,129 @@ st.markdown("""
 if 'font_size' not in st.session_state:
     st.session_state.font_size = 'medium'
 if 'font_color' not in st.session_state:
-    st.session_state.font_color = '#1e293b' # لون نص داكن للقراءة على الخلفية الفاتحة
+    st.session_state.font_color = '#1e293b'
 
 # =============================================================
-# 🎨 تفعيل التصميم الجديد (بدون CSS معقد)
+# 🎨 تنسيق الألوان والتصميم (CSS مضمون 100%)
 # =============================================================
-# تم استخدام مكتبة st_theme لتعطيك خلفية رمادية باردة وشكل مودرن فوراً
-theme = st_theme(
-    theme="modern",           # اسم الثيم الجاهز (مودرن)
-    primary="#2563eb",        # اللون الرئيسي (أزرق ملكي)
-    background="#f4f6f8",     # لون الخلفية (رمادي بارد فاتح جداً)
-    secondary="#e2e8f0",      # لون الحواف والكروت
-    font="sans serif",        # نوع الخط
-    sidebar=True,             # تفعيل الشريط الجانبي
-    rounded=True,             # حواف مدورة للأزرار والمربعات
-)
-# =============================================================
+font_size_map = {
+    "small": "14px",
+    "medium": "17px",
+    "large": "22px"
+}
+selected_font_size = font_size_map.get(st.session_state.font_size, "17px")
+text_color = st.session_state.font_color
+
+st.markdown(f"""
+<style>
+    /* إخفاء عناصر Streamlit الافتراضية */
+    header {{visibility: hidden !important;}}
+    #MainMenu {{visibility: hidden !important;}}
+    footer {{visibility: hidden !important;}}
+    .stDeployButton {{display: none !important;}}
+    [data-testid="stStatusWidget"] {{visibility: hidden !important;}}
+    
+    /* الخلفية العامة: رمادي بارد فاتح جداً */
+    .stApp {{
+        background-color: #f4f6f8 !important;
+    }}
+    
+    /* الشريط الجانبي: رمادي أغمق قليلاً */
+    section[data-testid="stSidebar"] {{
+        background-color: #e2e8f0 !important;
+        border-right: 1px solid #cbd5e1;
+    }}
+    section[data-testid="stSidebar"] .stMarkdown,
+    section[data-testid="stSidebar"] .stRadio,
+    section[data-testid="stSidebar"] label {{
+        color: #1e293b !important;
+    }}
+
+    /* تنسيق النصوص العامة */
+    .stApp, .stMarkdown, .stCaption, .stDataFrame,
+    .stAlert, .stInfo, .stSuccess, .stWarning, .stError,
+    .stMetric, .stColumns, .stContainer, .stEmpty {{
+        color: {text_color} !important;
+        font-size: {selected_font_size} !important;
+    }}
+
+    /* العناوين الرئيسية - لون أزرق ملكي */
+    h1, h2, h3, h4, h5, h6 {{
+        color: #2563eb !important;
+        font-weight: 600 !important;
+    }}
+    
+    /* عناوين الحقول (Labels) */
+    .stTextInput label, .stTextArea label, .stSelectbox label,
+    .stFileUploader label, .stRadio label, .stCheckbox label,
+    .stSlider label, .stNumberInput label, .stDateInput label,
+    .stTimeInput label {{
+        color: {text_color} !important;
+        font-size: {selected_font_size} !important;
+        font-weight: 500;
+    }}
+    
+    /* الأزرار - حل مشكلة اختفاء النص */
+    .stButton button {{
+        color: #ffffff !important; /* النص أبيض دائماً */
+        background-color: #1e293b !important;
+        border-radius: 8px;
+        border: none;
+        padding: 8px 16px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        font-size: {selected_font_size} !important;
+    }}
+    
+    .stButton button:hover {{
+        color: #ffffff !important;
+        background-color: #2563eb !important;
+        transform: translateY(-2px);
+    }}
+    
+    .stButton button[kind="primary"] {{
+        background-color: #2563eb;
+    }}
+    .stButton button[kind="primary"]:hover {{
+        background-color: #1d4ed8;
+    }}
+
+    /* مربعات الإدخال */
+    .stTextInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"],
+    .stMultiSelect div[data-baseweb="select"], .stNumberInput input, .stDateInput input,
+    .stTimeInput input, .stFileUploader div, .stFileUploader label {{
+        background-color: #ffffff !important;
+        color: {text_color} !important;
+        border-radius: 8px !important;
+        border: 1px solid #cbd5e1 !important;
+        font-size: {selected_font_size} !important;
+    }}
+    
+    /* الفوتر */
+    .custom-footer {{
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        background: rgba(255, 255, 255, 0.9);
+        color: {text_color} !important;
+        text-align: center;
+        padding: 12px 0;
+        font-size: 14px;
+        border-top: 1px solid #cbd5e1;
+        z-index: 999;
+        backdrop-filter: blur(5px);
+    }}
+    .custom-footer span {{ color: #2563eb; font-weight: 600; }}
+</style>
+""", unsafe_allow_html=True)
 
 st.markdown("""
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 """, unsafe_allow_html=True)
 
 # =============================================================
-# محاولة تحديث الجداول لإضافة أعمدة الحذف
+# محاولة تحديث الجداول
 # =============================================================
 def update_db_schema():
     try:
@@ -89,7 +188,7 @@ if "logged_in" not in st.session_state:
     st.session_state.role = "User"
 
 # =============================================================
-# 🔥 الحل النهائي باستخدام st.query_params
+# 🔥 st.query_params
 # =============================================================
 query_params = st.query_params
 guest_login = query_params.get("guest")
@@ -129,7 +228,6 @@ with top_col2:
     font_color_choice = st.color_picker("🎨 لون النص", st.session_state.font_color, key="font_color_picker")
     st.session_state.font_color = font_color_choice
 
-# ✅ إضافة زر تطبيق الإعدادات
 if st.button("✅ تطبيق الإعدادات", type="primary"):
     st.success("تم تطبيق حجم ولون الخط بنجاح!")
     st.rerun()
@@ -141,7 +239,6 @@ with top_col3:
 t = TRANSLATIONS[st.session_state.lang]
 
 if not st.session_state.logged_in:
-    
     st.markdown("""
     <div style="display: flex; justify-content: center; margin-top: 40px; margin-bottom: 10px;">
         <h1 style="font-size: 42px; font-weight: 700; color: #2563eb;">مجموعة أعمال الشاطئ</h1>
@@ -201,7 +298,6 @@ else:
         nav_options.append(t["nav_master"])
     nav_options.append(t["nav_reports"])
         
-    # ✅ تعديل الراديو بوتون ليظهر في الشريط الجانبي بشكل أوضح
     st.sidebar.header("🔀 لوحة التحكم")
     selected_screen = st.sidebar.radio("اختر الصفحة:", nav_options, index=0)
 
@@ -247,10 +343,9 @@ else:
                     recipient = st.selectbox(t["send_to"], ["--- اختر المستخدم ---"] + active_users)
                     msg = st.text_area(t["your_message"])
                     
-                    # ✅ تعديل زرار الرفع لإضافة النص والحد الأقصى 200MB وإخفاء الرسالة المزعجة
                     uploaded_file = st.file_uploader(
                         label="📎 **اختر الملف لرفعه**",
-                        type=None,  # يسمح بكل أنواع الملفات
+                        type=None,
                         help="الحد الأقصى للحجم هو 200 MB لكل ملف.",
                         key="send_file_upload"
                     )
