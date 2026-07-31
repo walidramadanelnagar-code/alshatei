@@ -30,7 +30,7 @@ if 'lang' not in st.session_state:
     st.session_state.lang = 'ar'
 
 # =============================================================
-# 🎨 التصميم النهائي (نسخة "ممتاز" كما هي)
+# 🎨 التصميم النهائي (نسخة "ممتاز" قبل أي تعديل)
 # =============================================================
 st.markdown(f"""
 <style>
@@ -640,9 +640,7 @@ else:
             
             col_f1, col_f2 = st.columns(2)
             with col_f1:
-                # ✅ إصلاح التداخل: استبدال st.expander بـ st.container(border=True)
-                st.markdown(f"📁 {t['create_folder']}")
-                with st.container(border=True):
+                with st.expander("📁 " + t['create_folder']):
                     with st.form("create_main_folder_form", clear_on_submit=True):
                         new_m = st.text_input("اسم المجلد الرئيسي الجديد").strip()
                         if st.form_submit_button("إنشاء"):
@@ -660,9 +658,7 @@ else:
                                         st.error("المجلد موجود مسبقاً!")
 
             with col_f2:
-                # ✅ إصلاح التداخل: استبدال st.expander بـ st.container(border=True)
-                st.markdown(f"➕ {t['create_sub']}")
-                with st.container(border=True):
+                with st.expander("➕ " + t['create_sub']):
                     with st.form("create_sub_folder_form", clear_on_submit=True):
                         allowed_p = get_all_folders() if is_admin else st.session_state.allowed
                         p_choice = st.selectbox("اختر المجلد الرئيسي", allowed_p)
@@ -681,10 +677,8 @@ else:
                                     except Exception:
                                         st.error("المجلد الفرعي موجود مسبقاً!")
 
-            # ✅ إصلاح التداخل: استبدال st.expander بـ st.container(border=True)
-            st.markdown(f"⚙️ {t['manage_folders']}")
-            with st.container(border=True):
-                m_tab1, m_tab2 = st.tabs([t['rename_tab'], t['delete_tab']])
+            with st.expander("⚙️ " + t['manage_folders']):
+                m_tab1, m_tab2 = st.tabs(["✏️ " + t['rename_tab'], "🗑️ " + t['delete_tab']])
                 
                 with m_tab1:
                     m_type = st.radio("نوع المجلد", ["رئيسي", "فرعي"], horizontal=True, key="ren_type")
