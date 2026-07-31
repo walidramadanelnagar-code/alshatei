@@ -27,8 +27,7 @@ TRANSLATIONS = {
         'nav_master': "⚙️ لوحة التحكم الرئيسية",
         'nav_reports': "📊 التقارير والرقابة",
         'nav_files_guest': "📄 الوثائق والملفات العامة",
-        'restore_msg': "جاري استعادة هذه الشاشة بالكامل (سيتم إضافتها قريباً).",
-        'upload_btn': "اختر ملف"
+        'restore_msg': "جاري استعادة هذه الشاشة بالكامل (سيتم إضافتها قريباً)."
     },
     'en': {
         'app_title': "Document Management & Sharing System",
@@ -58,7 +57,6 @@ TRANSLATIONS = {
         'nav_master': "⚙️ Main Dashboard",
         'nav_reports': "📊 Reports & Oversight",
         'nav_files_guest': "📄 Public Documents",
-        'restore_msg': "This screen is currently being restored (will be added soon).",
-        'upload_btn': "Choose File"
+        'restore_msg': "This screen is currently being restored (will be added soon)."
     }
 }
