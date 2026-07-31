@@ -26,22 +26,22 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =============================================================
-# 🎨 إعدادات حجم ولون الخط (تمت الإضافة)
+# 🎨 إعدادات حجم ولون الخط
 # =============================================================
 if 'font_size' not in st.session_state:
     st.session_state.font_size = 'medium'
 if 'font_color' not in st.session_state:
-    st.session_state.font_color = '#ffffff'
+    st.session_state.font_color = '#0f172a' # لون نص داكن جداً (كحلي غامق) للقراءة على الخلفية الفاتحة
 
 # =============================================================
-# 🟢 CSS - كل النصوص بيضاء ناصعة + دعم حجم الخط
+# 🔥 تنسيق الألوان والـ CSS الكامل (تم إعادة كتابته بالكامل)
 # =============================================================
 font_size_map = {
     "small": "14px",
-    "medium": "18px",
-    "large": "24px"
+    "medium": "17px",
+    "large": "22px"
 }
-selected_font_size = font_size_map.get(st.session_state.font_size, "18px")
+selected_font_size = font_size_map.get(st.session_state.font_size, "17px")
 text_color = st.session_state.font_color
 
 st.markdown(f"""
@@ -53,126 +53,104 @@ st.markdown(f"""
     .stDeployButton {{display: none !important;}}
     [data-testid="stStatusWidget"] {{visibility: hidden !important;}}
     
-    .stApp {{ background-color: #0e1117; }}
+    /* ✅ 1. الخلفية العامة: رمادي بارد فاتح جداً (مريح للعين) */
+    .stApp {{ 
+        background-color: #f8fafc !important; 
+    }}
     
-    /* ✅ تنسيق جميع النصوص مع إمكانية تغيير اللون والحجم */
-    .stApp, .stTextInput, .stTextArea, .stSelectbox, .stMarkdown, .stCaption, .stDataFrame,
-    .stRadio, .stCheckbox, .stSlider, .stNumberInput, .stDateInput, .stTimeInput,
-    .stButton, .stDownloadButton, .stForm, .stExpander, .stTabs, .stTab,
-    .stAlert, .stInfo, .stSuccess, .stWarning, .stError, .stException,
-    .stSpinner, .stProgress, .stStatusWidget, .stMetric,
-    .stColumns, .stContainer, .stEmpty, .stImage, .stAudio, .stVideo,
-    .stCode, .stJson, .stLatex, .stHtml, .stIframe,
-    .stSidebar, .stSidebarContent, .stSidebarUserContent,
-    .stSelectbox div[data-baseweb="select"] > div,
-    .stMultiSelect div[data-baseweb="select"] > div,
-    .stTextInput input, .stTextArea textarea,
-    .stSelectbox div[data-baseweb="select"] > div,
-    .stFileUploader div, .stFileUploader label,
-    .stDownloadButton button, .stButton button,
-    .stFormSubmitButton button,
-    .stTabs [role="tablist"] button,
-    .stExpander summary,
-    .stRadio div[role="radiogroup"] label,
-    .stCheckbox label,
-    .stSlider label,
-    .stNumberInput label,
-    .stDateInput label,
-    .stTimeInput label,
-    .stMetric label,
-    .stDataFrame th, .stDataFrame td,
-    .stMarkdown h1, .stMarkdown h2, .stMarkdown h3, .stMarkdown h4, .stMarkdown h5, .stMarkdown h6,
-    .stMarkdown p, .stMarkdown li, .stMarkdown blockquote,
-    .stCaption, .stCode, .stJson, .stLatex,
+    /* ✅ 2. الشريط الجانبي (Sidebar): رمادي أغمق قليلاً للتمييز */
+    section[data-testid="stSidebar"] {{
+        background-color: #e2e8f0 !important;
+        border-right: 1px solid #cbd5e1;
+    }}
+    section[data-testid="stSidebar"] .stMarkdown,
+    section[data-testid="stSidebar"] .stRadio,
+    section[data-testid="stSidebar"] label {{
+        color: #1e293b !important; /* نص داكن جداً */
+    }}
+
+    /* ✅ 3. تنسيق النصوص والعناوين العامة (ليست مطفية) */
+    .stApp, .stMarkdown, .stCaption, .stDataFrame,
     .stAlert, .stInfo, .stSuccess, .stWarning, .stError,
-    .stException, .stSpinner, .stProgress,
-    .stSidebar .stMarkdown, .stSidebar .stTextInput, .stSidebar .stSelectbox,
-    .stSidebar .stRadio, .stSidebar .stCheckbox,
-    .stSidebar .stSlider, .stSidebar .stNumberInput,
-    .stSidebar .stDateInput, .stSidebar .stTimeInput,
-    .stSidebar .stButton, .stSidebar .stDownloadButton,
-    .stSidebar .stExpander, .stSidebar .stTabs,
-    .stSidebar .stAlert, .stSidebar .stInfo, .stSidebar .stSuccess,
-    .stSidebar .stWarning, .stSidebar .stError,
-    .stSidebar .stMarkdown h1, .stSidebar .stMarkdown h2,
-    .stSidebar .stMarkdown h3, .stSidebar .stMarkdown h4,
-    .stSidebar .stMarkdown p, .stSidebar .stMarkdown li,
-    .stSidebar .stCaption, .stSidebar .stCode,
-    .stSidebar .stJson, .stSidebar .stLatex {{
-        color: {text_color} !important;
+    .stMetric, .stColumns, .stContainer, .stEmpty,
+    .stTextInput label, .stTextArea label, .stSelectbox label,
+    .stFileUploader label, .stRadio label, .stCheckbox label {{
+        color: #1e293b !important; /* نص كحلي غامق جدا */
         font-size: {selected_font_size} !important;
     }}
 
-    /* ✅ تنسيق Labels (عناوين الحقول) */
-    .stTextInput label, .stTextArea label, .stSelectbox label,
-    .stFileUploader label, .stRadio label, .stCheckbox label,
-    .stSlider label, .stNumberInput label, .stDateInput label,
-    .stTimeInput label, .stMetric label,
-    .stTabs [role="tablist"] button,
-    .stExpander summary {{
-        color: {text_color} !important;
-        font-size: {selected_font_size} !important;
-        font-weight: 500;
+    /* العناوين الرئيسية (H1, H2, H3) - لون سماوي/كهربي رائع */
+    h1, h2, h3, h4, h5, h6 {{
+        color: #2563eb !important; /* أزرق فاقع (Royal Blue) */
+        font-weight: 600 !important;
     }}
     
-    /* ✅ الأزرار */
+    /* ✅ 4. مربعات الإدخال (النص والـ Uploader) - خلفية بيضاء ونص أسود */
+    .stTextInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"],
+    .stMultiSelect div[data-baseweb="select"], .stNumberInput input, .stDateInput input,
+    .stTimeInput input, .stFileUploader div, .stFileUploader label {{
+        background-color: #ffffff !important; /* أبيض ناصع */
+        color: #1e293b !important; /* نص كحلي غامق جدا */
+        border-radius: 10px !important;
+        border: 1px solid #cbd5e1 !important;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }}
+    
+    /* تعديل لون النص داخل الـ Uploader لما يكون فاضي */
+    .stFileUploader div[data-testid="stFileUploadDropzone"] {{
+        background-color: #ffffff !important;
+        border: 1px dashed #94a3b8 !important;
+    }}
+    .stFileUploader div[data-testid="stFileUploadDropzone"] small {{
+        color: #475569 !important;
+    }}
+
+    /* ✅ 5. الأزرار (الحل النهائي لمشكلة اختفاء النص والهوفر) */
     .stButton button {{
-        color: {text_color} !important;
+        color: #ffffff !important; /* النص أبيض دائماً */
+        background-color: #1e293b !important; /* خلفية كحلي غامق */
         border-radius: 8px;
         border: none;
-        padding: 8px 16px;
+        padding: 10px 20px;
         font-weight: 500;
         transition: all 0.3s ease;
         font-size: {selected_font_size} !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }}
     
-    .stButton button[kind="secondary"], 
-    .stButton button:not([kind]) {{
-        background-color: #2d3748 !important;
-        border: 1px solid #4a5568;
-    }}
-    .stButton button[kind="secondary"]:hover,
-    .stButton button:not([kind]):hover {{
-        background-color: #4a5568 !important;
+    /* حالة الهوفر (عندما يجيء الماوس) - النص يفضل أبيض والخلفية تتغير للأزرق */
+    .stButton button:hover {{
+        color: #ffffff !important; /* النص يفضل أبيض */
+        background-color: #2563eb !important; /* يتحول للأزرق */
         transform: translateY(-2px);
-        box-shadow: 0 6px 8px rgba(0,0,0,0.4);
+        box-shadow: 0 6px 12px rgba(37, 99, 235, 0.3);
     }}
     
+    /* الأزرار الأساسية (Primary) */
     .stButton button[kind="primary"] {{
-        background-color: #3b82f6;
-    }}
-    .stButton button[kind="primary"]:hover {{
         background-color: #2563eb;
     }}
-
-    /* ✅ مربعات الإدخال */
-    .stTextInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"],
-    .stMultiSelect div[data-baseweb="select"], .stNumberInput input, .stDateInput input,
-    .stTimeInput input {{
-        border-radius: 8px;
-        border: 1px solid #374151;
-        background-color: #1f2937;
-        color: {text_color} !important;
-        font-size: {selected_font_size} !important;
+    .stButton button[kind="primary"]:hover {{
+        background-color: #1d4ed8;
     }}
-    
-    /* ✅ الـ Footer */
+
+    /* ✅ 6. الفوتر */
     .custom-footer {{
         position: fixed;
         left: 0;
         bottom: 0;
         width: 100%;
-        background: rgba(17, 24, 39, 0.95);
-        color: {text_color} !important;
+        background: rgba(255, 255, 255, 0.9);
+        color: #1e293b !important;
         text-align: center;
         padding: 12px 0;
         font-size: 14px;
         font-weight: 400;
-        border-top: 1px solid #2d3748;
+        border-top: 1px solid #cbd5e1;
         z-index: 999;
         backdrop-filter: blur(5px);
     }}
-    .custom-footer span {{ color: #d4af37; }}
+    .custom-footer span {{ color: #2563eb; font-weight: 600; }}
     
     /* ✅ شعار المجموعة */
     .brand-text-container {{
@@ -186,11 +164,11 @@ st.markdown(f"""
         font-size: 38px;
         font-weight: 700;
         letter-spacing: 2px;
-        background: linear-gradient(135deg, #f5af19 0%, #f12711 100%);
+        background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
-        text-shadow: 0px 4px 10px rgba(0,0,0,0.3);
+        text-shadow: 0px 4px 10px rgba(0,0,0,0.1);
     }}
     </style>
 """, unsafe_allow_html=True)
@@ -296,10 +274,10 @@ if not st.session_state.logged_in:
     
     st.markdown("""
     <h1 style='text-align: center; font-size: 38px;'>
-        <i class="fas fa-lock-open" style="color: #3b82f6; margin-right: 10px;"></i> 
+        <i class="fas fa-lock-open" style="color: #2563eb; margin-right: 10px;"></i> 
         تسجيل الدخول للنظام
     </h1>
-    <div style='width: 100px; height: 3px; background: #3b82f6; margin: 10px auto 30px auto; border-radius: 2px;'></div>
+    <div style='width: 100px; height: 3px; background: #2563eb; margin: 10px auto 30px auto; border-radius: 2px;'></div>
     """, unsafe_allow_html=True)
     
     username_input = st.text_input(t["username"])
