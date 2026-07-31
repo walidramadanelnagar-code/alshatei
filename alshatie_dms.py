@@ -91,7 +91,7 @@ st.markdown(f"""
     div[data-testid="stVerticalBlock"] > div:has(div.stSelectbox),
     div[data-testid="stVerticalBlock"] > div:has(div.stFileUploader),
     .stAlert, .stInfo, .stSuccess, .stWarning, .stError,
-    .stExpander, .stTabs {{
+    .stExpander {{
         background-color: #ffffff !important;
         padding: 16px !important;
         border-radius: 12px !important;
@@ -660,7 +660,7 @@ else:
             
             col_f1, col_f2 = st.columns(2)
             with col_f1:
-                with st.expander("📁 " + t['create_folder']):
+                with st.expander(t['create_folder']):
                     with st.form("create_main_folder_form", clear_on_submit=True):
                         new_m = st.text_input("اسم المجلد الرئيسي الجديد").strip()
                         if st.form_submit_button("إنشاء"):
@@ -678,7 +678,7 @@ else:
                                         st.error("المجلد موجود مسبقاً!")
 
             with col_f2:
-                with st.expander("➕ " + t['create_sub']):
+                with st.expander(t['create_sub']):
                     with st.form("create_sub_folder_form", clear_on_submit=True):
                         allowed_p = get_all_folders() if is_admin else st.session_state.allowed
                         p_choice = st.selectbox("اختر المجلد الرئيسي", allowed_p)
@@ -697,8 +697,8 @@ else:
                                     except Exception:
                                         st.error("المجلد الفرعي موجود مسبقاً!")
 
-            with st.expander("⚙️ " + t['manage_folders']):
-                m_tab1, m_tab2 = st.tabs(["✏️ " + t['rename_tab'], "🗑️ " + t['delete_tab']])
+            with st.expander(t['manage_folders']):
+                m_tab1, m_tab2 = st.tabs([t['rename_tab'], t['delete_tab']])
                 
                 with m_tab1:
                     m_type = st.radio("نوع المجلد", ["رئيسي", "فرعي"], horizontal=True, key="ren_type")
