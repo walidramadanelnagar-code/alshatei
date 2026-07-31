@@ -30,7 +30,7 @@ if 'lang' not in st.session_state:
     st.session_state.lang = 'ar'
 
 # =============================================================
-# 🎨 التصميم النهائي (نسخة "ممتاز" قبل أي تعديل)
+# 🎨 التصميم الجديد والممتد (النسخة النهائية)
 # =============================================================
 st.markdown(f"""
 <style>
@@ -50,7 +50,7 @@ st.markdown(f"""
     
     section[data-testid="stSidebar"] {{ display: none !important; }}
     
-    /* تنسيق أزرار التنقل */
+    /* ✅ تنسيق أزرار التنقل (شكل الأزرار الأفقية) */
     .stRadio > div {{
         display: flex !important;
         flex-wrap: wrap !important;
@@ -85,7 +85,7 @@ st.markdown(f"""
         display: none !important;
     }}
 
-    /* تنسيق الكروت */
+    /* ✅ تنسيق الكروت البيضاء (لكل الشاشات) */
     div[data-testid="stVerticalBlock"] > div:has(div.stTextInput),
     div[data-testid="stVerticalBlock"] > div:has(div.stTextArea),
     div[data-testid="stVerticalBlock"] > div:has(div.stSelectbox),
@@ -110,14 +110,15 @@ st.markdown(f"""
     }}
 
     .stTextInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"],
-    .stMultiSelect div[data-baseweb="select"], .stNumberInput input {{
+    .stMultiSelect div[data-baseweb="select"], .stNumberInput input, .stDateInput input,
+    .stTimeInput input {{
         background-color: #ffffff !important;
         color: #1e293b !important;
         border: 1px solid #e2e8f0 !important;
         border-radius: 8px !important;
     }}
 
-    /* ✅ الأزرار (اللون أزرق والنص أبيض) */
+    /* ✅ الأزرار (أزرق ونص أبيض) */
     .stButton button {{
         color: #ffffff !important;
         background-color: #2563eb !important;
@@ -127,7 +128,7 @@ st.markdown(f"""
         font-weight: 600 !important;
         transition: 0.3s;
     }}
-    .stButton button:hover {{ background-color: #1d4ed8 !important; }}
+    .stButton button:hover {{ background-color: #1d4ed8 !important; transform: translateY(-2px); }}
     
     .stButton button[kind="secondary"],
     .stButton button:not([kind]) {{ background-color: #1e293b !important; }}
@@ -229,7 +230,7 @@ if not st.session_state.logged_in:
             log_activity(username_input, "LOGIN", "", "System", "Logged into system")
             st.rerun()
         else:
-            st.error("خطأ في بيانات الدخول / Invalid Credentials")
+            st.error("خطأ في بيانات الدхول / Invalid Credentials")
 
 else:
     t = TRANSLATIONS[st.session_state.lang]
@@ -239,25 +240,25 @@ else:
     is_manager = (st.session_state.role == "Manager")
 
     if is_guest:
-        main_title = "📄 " + t['nav_files_guest']
-        files_screen_title = "📁 " + t['nav_files']
+        main_title = "📄 الوثائق والملفات العامة"
+        files_screen_title = "📂 قاعدة الملفات"
     else:
-        main_title = "📂 " + t['nav_main_user']
-        files_screen_title = "📁 " + t['nav_files']
+        main_title = t['nav_main_user']
+        files_screen_title = "📁 قاعدة الملفات"
     
     nav_options = [main_title, files_screen_title]
     if is_admin or is_manager:
-        nav_options.append("👤 " + t['nav_users'])
+        nav_options.append(t['nav_users'])
     if is_admin:
-        nav_options.append("⚙️ " + t['nav_master'])
-    nav_options.append("📊 " + t['nav_reports'])
+        nav_options.append(t['nav_master'])
+    nav_options.append(t['nav_reports'])
 
     # ✅ الرأس والتنقل
     col_logo, col_controls = st.columns([3, 2])
     with col_logo:
         st.markdown(f"""
         <div style="margin-top: 5px;">
-            <h2 style="font-size: 24px; color: #0f172a; margin-bottom: 0;">{t['app_title']}</h2>
+            <h2 style="font-size: 24px; color: #0f172a; margin-bottom: 0;">نظام <span style="color: #2563eb;">ضبط ومشاركة الوثائق</span></h2>
         </div>
         """, unsafe_allow_html=True)
     with col_controls:
@@ -271,7 +272,7 @@ else:
                 st.session_state.lang = 'en'
                 st.rerun()
         with col_btn:
-            if st.button(t['logout'], use_container_width=True):
+            if st.button("خروج", use_container_width=True):
                 log_activity(st.session_state.user, "LOGOUT", "", "System", "Logged out")
                 st.session_state.logged_in = False
                 st.session_state.user = None
@@ -310,23 +311,23 @@ else:
                     else:
                         st.caption("الملف غير موجود")
             else:
-                st.info(t['no_inbox'])
+                st.info("لا توجد ملفات.")
 
         else:
-            st.subheader(t['send_title'])
+            st.subheader("📤 إرسال ملف لزميل")
             with st.form("send_file_form", clear_on_submit=True):
                 active_users = [u[0] for u in get_all_users() if u[7] == 'active' and u[0] != st.session_state.user and u[2] != "Guest"]
                 
                 if not active_users:
-                    st.warning(t['no_active_users'])
+                    st.warning("لا يوجد مستخدمين نشطين.")
                 else:
-                    recipient = st.selectbox(t['send_to'], ["--- اختر المستخدم ---"] + active_users)
-                    msg = st.text_area(t['your_message'])
-                    uploaded_file = st.file_uploader(t['choose_file'], type=None, help="200 MB كحد أقصى.")
+                    recipient = st.selectbox("أرسل إلى (المستلم):", ["--- اختر المستخدم ---"] + active_users)
+                    msg = st.text_area("رسالة مرافقة (اختياري):")
+                    uploaded_file = st.file_uploader("📎 **اختر الملف لرفعه**", type=None, help="200 MB كحد أقصى.")
                     
-                    if st.form_submit_button(t['send_now']):
+                    if st.form_submit_button("إرسال الملف الآن"):
                         if uploaded_file and recipient and recipient != "--- اختر المستخدم ---":
-                            progress_bar = st.progress(0, t['sending'])
+                            progress_bar = st.progress(0, "جاري الإرسال...")
                             user_folder = os.path.join("storage", "UserFiles", recipient)
                             os.makedirs(user_folder, exist_ok=True)
                             file_path = os.path.join(user_folder, uploaded_file.name)
@@ -338,13 +339,13 @@ else:
                                 cursor.execute("INSERT INTO user_files (filename, sender_username, recipient_username, message, file_path, timestamp) VALUES (?, ?, ?, ?, ?, ?)", (uploaded_file.name, st.session_state.user, recipient, msg, file_path, now_str))
                                 conn.commit()
                             progress_bar.empty()
-                            st.success(f"✅ {t['send_success']} {recipient}!")
+                            st.success(f"✅ تم إرسال الملف إلى {recipient}!")
                             st.rerun()
                         else:
-                            st.error(t['send_error'])
+                            st.error("يرجى اختيار مستلم صحيح ورفع ملف أولاً.")
             
             st.divider()
-            st.subheader(t['inbox_title'])
+            st.subheader("📥 الملفات والمراسلات الواردة إلي")
             with get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute("SELECT id, filename, sender_username, message, file_path, timestamp, deleted_by_sender, deleted_by_recipient FROM user_files WHERE recipient_username = ? AND deleted_by_recipient = 0 ORDER BY timestamp DESC", (st.session_state.user,))
@@ -361,18 +362,18 @@ else:
                             with open(f_path, "rb") as f:
                                 col3.download_button("⬇️ تحميل", f, file_name=f_name, key=f"dl_inbox_{msg_id}")
                         else:
-                            col3.caption(t['file_not_found'])
-                        if st.button(t['delete_btn'], key=f"del_msg_{msg_id}"):
+                            col3.caption("الملف غير موجود")
+                        if st.button(f"🗑️ حذف", key=f"del_msg_{msg_id}"):
                             with get_connection() as conn:
                                 conn.cursor().execute("UPDATE user_files SET deleted_by_recipient = 1 WHERE id = ?", (msg_id,))
                                 conn.commit()
-                            st.success(t['delete_success'])
+                            st.success("✅ تم حذف المراسلة من قائمتك.")
                             st.rerun()
             else:
-                st.info(t['no_inbox'])
+                st.info("لا توجد مراسلات واردة.")
 
             st.divider()
-            st.subheader(t['sent_title'])
+            st.subheader("📤 المراسلات الصادرة")
             with get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute("SELECT id, filename, recipient_username, message, file_path, timestamp, deleted_by_sender, deleted_by_recipient FROM user_files WHERE sender_username = ? AND deleted_by_sender = 0 ORDER BY timestamp DESC", (st.session_state.user,))
@@ -382,22 +383,22 @@ else:
                     (msg_id, f_name, recipient, msg, f_path, time_str, del_s, del_r) = row
                     with st.container(border=True):
                         col1, col2, col3 = st.columns([2, 2, 1])
-                        col1.markdown(f"📄 **{f_name}** ({t['to_label']} {recipient})")
+                        col1.markdown(f"📄 **{f_name}** (مرسل إلى: {recipient})")
                         col2.caption(f"🕒 {time_str}")
                         if msg: col2.caption(f"📝 {msg}")
                         if os.path.exists(f_path):
                             with open(f_path, "rb") as f:
                                 col3.download_button("⬇️ تحميل", f, file_name=f_name, key=f"dl_sent_{msg_id}")
                         else:
-                            col3.caption(t['file_not_found'])
-                        if st.button(t['delete_btn'], key=f"del_sent_{msg_id}"):
+                            col3.caption("الملف غير موجود")
+                        if st.button(f"🗑️ حذف", key=f"del_sent_{msg_id}"):
                             with get_connection() as conn:
                                 conn.cursor().execute("UPDATE user_files SET deleted_by_sender = 1 WHERE id = ?", (msg_id,))
                                 conn.commit()
-                            st.success(t['delete_success'])
+                            st.success("✅ تم حذف المراسلة من قائمتك.")
                             st.rerun()
             else:
-                st.info(t['no_sent'])
+                st.info("لا توجد مراسلات صادرة.")
 
     # ----------------------------------------------------
     # 2. إدارة الملفات والمجلدات
@@ -405,18 +406,18 @@ else:
     elif selected_screen == files_screen_title:
         st.title(files_screen_title)
         
-        st.subheader(t['search_title'])
+        st.subheader("🔍 بحث وتصفية")
         f_col1, f_col2, f_col3, f_col4 = st.columns(4)
-        search_keyword = f_col1.text_input(t['search_input'], "").strip().lower()
+        search_keyword = f_col1.text_input("كلمة البحث", "").strip().lower()
         
         with get_connection() as conn_u:
             cur_u = conn_u.cursor()
             cur_u.execute("SELECT username FROM users WHERE status = 'active'")
             usernames_list = [r[0] for r in cur_u.fetchall()]
 
-        selected_user_filter = f_col2.selectbox(t['filter_user'], [t['all_option']] + usernames_list, key="user_filter")
-        selected_main_folder_filter = f_col3.selectbox(t['filter_main'], [t['all_option']] + get_all_folders(), key="main_folder_filter")
-        file_extension_filter = f_col4.selectbox(t['filter_ext'], [t['all_option'], "pdf", "txt", "xlsx", "xls", "docx", "png", "jpg"], key="ext_filter")
+        selected_user_filter = f_col2.selectbox("المستخدم", ["الكل"] + usernames_list, key="user_filter")
+        selected_main_folder_filter = f_col3.selectbox("المجلد الرئيسي", ["الكل"] + get_all_folders(), key="main_folder_filter")
+        file_extension_filter = f_col4.selectbox("النوع", ["الكل", "pdf", "txt", "xlsx", "xls", "docx", "png", "jpg"], key="ext_filter")
         
         st.divider()
 
@@ -497,9 +498,9 @@ else:
                         st.session_state[f"confirm_ex_{row_id}"] = True
 
                     if st.session_state.get(f"confirm_ex_{row_id}", False):
-                        st.warning(t['confirm_del'])
+                        st.warning("هل أنت متأكد من الحذف؟")
                         cy, cn = st.columns(2)
-                        if cy.button(t['yes_del'], key=f"yes_ex_{row_id}"):
+                        if cy.button("✅ نعم", key=f"yes_ex_{row_id}"):
                             dest_path = os.path.join("storage", "Deleted", f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{f_name}")
                             if os.path.exists(f_path): shutil.move(f_path, dest_path)
                             
@@ -514,7 +515,7 @@ else:
                             del st.session_state[f"confirm_ex_{row_id}"]
                             st.success("تم حذف الملف بنجاح.")
                             st.rerun()
-                        if cn.button(t['cancel_del'], key=f"cancel_ex_{row_id}"):
+                        if cn.button("❌ إلغاء", key=f"cancel_ex_{row_id}"):
                             del st.session_state[f"confirm_ex_{row_id}"]
                             st.rerun()
 
@@ -522,7 +523,7 @@ else:
             st.subheader("📁 المجلدات الرئيسية")
             allowed_folders = get_all_folders() if is_admin else st.session_state.allowed
             
-            if selected_main_folder_filter != t['all_option']:
+            if selected_main_folder_filter != "الكل":
                 if selected_main_folder_filter in allowed_folders:
                     allowed_folders = [selected_main_folder_filter]
                 else:
@@ -545,8 +546,8 @@ else:
 
             def check_file_filter(f_name, uploader):
                 if search_keyword and search_keyword not in f_name.lower(): return False
-                if selected_user_filter != t['all_option'] and selected_user_filter != uploader: return False
-                if file_extension_filter != t['all_option'] and not f_name.lower().endswith(f".{file_extension_filter.lower()}"): return False
+                if selected_user_filter != "الكل" and selected_user_filter != uploader: return False
+                if file_extension_filter != "الكل" and not f_name.lower().endswith(f".{file_extension_filter.lower()}"): return False
                 return True
 
             filtered_files = [f for f in files_in_folder if check_file_filter(f[1], f[2])]
@@ -577,7 +578,7 @@ else:
 
         if not is_guest:
             st.divider()
-            st.subheader(t['upload_section'])
+            st.subheader("📤 رفع ملف في هذا المجلد")
             
             if current_display_folder != "ROOT":
                 current_parent = st.session_state.nav_path[0]
@@ -585,9 +586,9 @@ else:
 
                 if can_upload_here:
                     st.caption(f"📂 سيتم رفع الملف في المسار الحالي: **{current_display_folder_tag}**")
-                    uploaded_file = st.file_uploader(t['choose_file'], key="upload_main_file")
+                    uploaded_file = st.file_uploader("اختر الملف", key="upload_main_file")
                     
-                    if st.button(t['upload_file_btn']):
+                    if st.button("📤 تنفيذ الرفع"):
                         if uploaded_file is not None:
                             target_dir = os.path.join("storage", current_display_folder_tag)
                             target_file_path = os.path.join(target_dir, uploaded_file.name)
@@ -628,19 +629,19 @@ else:
                             time.sleep(0.5)
                             st.rerun()
                         else:
-                            st.error(t['upload_error'])
+                            st.error("❌ يجب عليك اختيار ملف أولاً قبل الضغط على زر الرفع.")
                 else:
-                    st.info(t['folder_permission'])
+                    st.info("❌ ليس لديك صلاحية للرفع في هذا المجلد.")
             else:
-                st.info(t['folder_empty'])
+                st.info("📁 اذهب إلى أحد المجلدات أولاً لرفع ملفاتك.")
 
         st.markdown("---")
         if is_admin or is_manager:
-            st.subheader(t['manage_folders'])
+            st.subheader("📂 إدارة المجلدات")
             
             col_f1, col_f2 = st.columns(2)
             with col_f1:
-                with st.expander("📁 " + t['create_folder']):
+                with st.expander("📁 إنشاء مجلد رئيسي جديد"):
                     with st.form("create_main_folder_form", clear_on_submit=True):
                         new_m = st.text_input("اسم المجلد الرئيسي الجديد").strip()
                         if st.form_submit_button("إنشاء"):
@@ -658,7 +659,7 @@ else:
                                         st.error("المجلد موجود مسبقاً!")
 
             with col_f2:
-                with st.expander("➕ " + t['create_sub']):
+                with st.expander("➕ إنشاء مجلد فرعي"):
                     with st.form("create_sub_folder_form", clear_on_submit=True):
                         allowed_p = get_all_folders() if is_admin else st.session_state.allowed
                         p_choice = st.selectbox("اختر المجلد الرئيسي", allowed_p)
@@ -677,8 +678,8 @@ else:
                                     except Exception:
                                         st.error("المجلد الفرعي موجود مسبقاً!")
 
-            with st.expander("⚙️ " + t['manage_folders']):
-                m_tab1, m_tab2 = st.tabs(["✏️ " + t['rename_tab'], "🗑️ " + t['delete_tab']])
+            with st.expander("⚙️ إدارة المجلدات"):
+                m_tab1, m_tab2 = st.tabs(["✏️ إعادة تسمية مجلد", "🗑️ نقل للمحذوفات"])
                 
                 with m_tab1:
                     m_type = st.radio("نوع المجلد", ["رئيسي", "فرعي"], horizontal=True, key="ren_type")
@@ -763,8 +764,8 @@ else:
     # ----------------------------------------------------
     # 3. إدارة المستخدمين
     # ----------------------------------------------------
-    elif selected_screen == t['nav_users'] and (is_admin or is_manager):
-        st.title("👤 " + t['nav_users'])
+    elif selected_screen == t["nav_users"] and (is_admin or is_manager):
+        st.title(t["nav_users"])
         
         all_users_data = get_all_users()
         active_users_data = [u for u in all_users_data if u[7] == 'active']
@@ -774,17 +775,17 @@ else:
         display_deleted_users = deleted_users_data if is_admin else [u for u in deleted_users_data if u[3] == st.session_state.user]
 
         uc1, uc2, uc3 = st.columns(3)
-        u_search = uc1.text_input(t['filter_user_search'], "").strip().lower()
-        u_role_f = uc2.selectbox(t['filter_role'], [t['all_option'], "Admin", "Manager", "User", "Guest"])
-        u_creator_f = uc3.selectbox(t['filter_creator'], [t['all_option']] + list(set([u[3] for u in active_users_data if u[3]])))
+        u_search = uc1.text_input("بحث عن مستخدم", "").strip().lower()
+        u_role_f = uc2.selectbox("الدور", ["الكل", "Admin", "Manager", "User", "Guest"])
+        u_creator_f = uc3.selectbox("المنشئ", ["الكل"] + list(set([u[3] for u in active_users_data if u[3]])))
 
         st.divider()
 
         table_rows = []
         for u_name, u_folders, u_role, u_creator, u_created_at, u_updated_at, u_changes, u_status, _, _ in display_users:
             if u_search and u_search not in u_name.lower(): continue
-            if u_role_f != t['all_option'] and u_role != u_role_f: continue
-            if u_creator_f != t['all_option'] and u_creator != u_creator_f: continue
+            if u_role_f != "الكل" and u_role != u_role_f: continue
+            if u_creator_f != "الكل" and u_creator != u_creator_f: continue
             
             table_rows.append({
                 "اسم المستخدم": u_name,
@@ -806,18 +807,18 @@ else:
                     st.session_state[f"confirm_u_{target_del_u}"] = True
 
                 if st.session_state.get(f"confirm_u_{target_del_u}", False):
-                    st.warning(t['confirm_del_user'].format(name=target_del_u))
+                    st.warning(f"هل أنت متأكد من حذف المستخدم `{target_del_u}`؟")
                     dy, dn = st.columns(2)
-                    if dy.button(t['yes_del'], key=f"y_u_{target_del_u}"):
+                    if dy.button("✅ نعم", key=f"y_u_{target_del_u}"):
                         now_t = datetime.now().strftime("%Y-%m-%d %H:%M")
                         with get_connection() as conn:
                             cursor = conn.cursor()
                             cursor.execute("UPDATE users SET status = 'deleted', deleted_by = ?, deleted_at = ? WHERE username = ?", (st.session_state.user, now_t, target_del_u))
                             conn.commit()
                         del st.session_state[f"confirm_u_{target_del_u}"]
-                        st.success(t['user_deleted_success'])
+                        st.success("تم حذف المستخدم.")
                         st.rerun()
-                    if dn.button(t['cancel_del'], key=f"n_u_{target_del_u}"):
+                    if dn.button("❌ إلغاء", key=f"n_u_{target_del_u}"):
                         del st.session_state[f"confirm_u_{target_del_u}"]
                         st.rerun()
         else:
@@ -826,19 +827,19 @@ else:
         st.divider()
 
         if is_admin:
-            tab_add, tab_edit, tab_deleted_list, tab_admin_settings = st.tabs(["➕ " + t['user_add_tab'], "✏️ " + t['user_edit_tab'], "🗑️ " + t['user_deleted_list_tab'], "⚙️ " + t['admin_settings_tab']])
+            tab_add, tab_edit, tab_deleted_list, tab_admin_settings = st.tabs(["➕ إضافة مستخدم", "✏️ تعديل مستخدم", "🗑️ المحذوفات", "⚙️ إعدادات الأدمن"])
         else:
-            tab_add, tab_edit, tab_deleted_list = st.tabs(["➕ " + t['user_add_tab'], "✏️ " + t['user_edit_tab'], "🗑️ " + t['user_deleted_list_tab']])
+            tab_add, tab_edit, tab_deleted_list = st.tabs(["➕ إضافة مستخدم", "✏️ تعديل مستخدم", "🗑️ المحذوفات"])
 
         with tab_add:
             with st.form("user_add_form", clear_on_submit=True):
-                new_u = st.text_input(t['username'])
-                new_p = st.text_input(t['password'], type="password")
+                new_u = st.text_input("اسم المستخدم")
+                new_p = st.text_input("كلمة المرور", type="password")
                 role_opts = ["Admin", "Manager", "User", "Guest"] if is_admin else ["User", "Guest"]
-                selected_role = st.selectbox(t['role_label'], role_opts)
-                selected_allowed = st.multiselect(t['allowed_folders_label'], get_all_folders(), default=["Main"])
+                selected_role = st.selectbox("الدور", role_opts)
+                selected_allowed = st.multiselect("المجلدات المسموحة", get_all_folders(), default=["Main"])
                 
-                if st.form_submit_button(t['save_user_btn']):
+                if st.form_submit_button("حفظ"):
                     if new_u and new_p:
                         now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
                         with get_connection() as conn:
@@ -846,7 +847,7 @@ else:
                             try:
                                 cursor.execute("INSERT INTO users (username, password, allowed_folders, role, created_by, created_at, updated_at, changes_log, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active')", (new_u, hash_password(new_p), ",".join(selected_allowed), selected_role, st.session_state.user, now_str, now_str, f"Created on {now_str}"))
                                 conn.commit()
-                                st.success(t['user_saved_success'].format(name=new_u))
+                                st.success(f"✅ تم إنشاء المستخدم {new_u}.")
                                 st.rerun()
                             except Exception:
                                 st.error("اسم المستخدم موجود مسبقاً!")
@@ -865,14 +866,14 @@ else:
             
             with st.form("user_edit_form"):
                 st.text_input("اسم المستخدم", value=target_u if target_u != "-- اختر مستخدم --" else "", disabled=True)
-                edit_p = st.text_input(t['edit_password'], type="password", help="اتركه فارغاً إذا لا تريد تغييره")
+                edit_p = st.text_input("كلمة مرور جديدة", type="password", help="اتركه فارغاً إذا لا تريد تغييره")
                 role_list = ["Admin", "Manager", "User", "Guest"]
                 idx = role_list.index(user_current_data["role"]) if user_current_data and user_current_data["role"] in role_list else 2
-                selected_edit_role = st.selectbox(t['role_label'], role_list, index=idx)
+                selected_edit_role = st.selectbox("الدور", role_list, index=idx)
                 default_allowed = user_current_data["allowed_folders"] if user_current_data else ["Main"]
-                selected_edit_allowed = st.multiselect(t['allowed_folders_label'], get_all_folders(), default=default_allowed)
+                selected_edit_allowed = st.multiselect("المجلدات المسموحة", get_all_folders(), default=default_allowed)
                 
-                if st.form_submit_button(t['save_edit_btn']):
+                if st.form_submit_button("حفظ التعديلات"):
                     if target_u and target_u != "-- اختر مستخدم --":
                         now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
                         folders_str = ",".join(selected_edit_allowed)
@@ -883,7 +884,7 @@ else:
                             else:
                                 cursor.execute("UPDATE users SET allowed_folders = ?, role = ?, updated_at = ? WHERE username = ?", (folders_str, selected_edit_role, now_str, target_u))
                             conn.commit()
-                        st.success(t['user_saved_success'].format(name=target_u))
+                        st.success(f"✅ تم تحديث بيانات {target_u}.")
                         st.rerun()
                     else:
                         st.error("يرجى اختيار مستخدم.")
@@ -900,12 +901,12 @@ else:
             with tab_admin_settings:
                 st.subheader("🔐 تغيير بيانات الأدمن")
                 with st.form("admin_settings_form", clear_on_submit=True):
-                    old_pass = st.text_input(t['admin_change_pass'], type="password")
-                    new_user = st.text_input(t['admin_new_user'], help="اتركه فارغاً إذا لا تريد تغييره")
-                    new_pass = st.text_input(t['admin_new_pass'], type="password")
-                    confirm_pass = st.text_input(t['admin_confirm_pass'], type="password")
+                    old_pass = st.text_input("كلمة المرور الحالية", type="password")
+                    new_user = st.text_input("اسم مستخدم جديد (اختياري)", help="اتركه فارغاً إذا لا تريد تغييره")
+                    new_pass = st.text_input("كلمة مرور جديدة", type="password")
+                    confirm_pass = st.text_input("تأكيد كلمة المرور الجديدة", type="password")
                     
-                    if st.form_submit_button(t['admin_update_btn']):
+                    if st.form_submit_button("تحديث"):
                         if not old_pass:
                             st.error("يجب كتابة كلمة المرور الحالية.")
                         elif new_pass and new_pass != confirm_pass:
@@ -933,8 +934,8 @@ else:
     # ----------------------------------------------------
     # 4. لوحة التحكم الرئيسية
     # ----------------------------------------------------
-    elif selected_screen == t['nav_master'] and is_admin:
-        st.title("⚙️ " + t['nav_master'])
+    elif selected_screen == t["nav_master"] and is_admin:
+        st.title(t["nav_master"])
         
         st.subheader("📊 سجل العمليات")
         with get_connection() as conn:
@@ -1001,8 +1002,8 @@ else:
     # ----------------------------------------------------
     # 5. لوحة التقارير والرقابة
     # ----------------------------------------------------
-    elif selected_screen == t['nav_reports']:
-        st.title("📊 " + t['nav_reports'])
+    elif selected_screen == t["nav_reports"]:
+        st.title(t["nav_reports"])
         
         if is_admin:
             with st.expander("📦 أرشيف التقارير"):
