@@ -15,7 +15,6 @@ from database import (
     get_all_users, get_all_folders, get_subfolders, 
     get_connection, hash_password
 )
-from translations import TRANSLATIONS
 
 st.set_page_config(page_title="نظام ضبط ومشاركة الوثائق - أعمال الشاطئ", layout="wide", initial_sidebar_state="collapsed")
 
@@ -24,13 +23,76 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =============================================================
-# 🎨 إعدادات اللغة
+# 🎨 الترجمة المدمجة (Final Safe Translation)
 # =============================================================
 if 'lang' not in st.session_state:
     st.session_state.lang = 'ar'
 
+TRANS = {
+    'ar': {
+        'welcome': "مرحباً",
+        'logout': "خروج",
+        'no_inbox': "لا توجد ملفات واردة.",
+        'no_sent': "لا توجد مراسلات صادرة.",
+        'file_not_found': "الملف غير موجود",
+        'delete_btn': "🗑️ حذف",
+        'delete_success': "✅ تم حذف المراسلة من قائمتك.",
+        'inbox_title': "📥 الملفات والمراسلات الواردة",
+        'sent_title': "📤 المراسلات الصادرة",
+        'send_title': "📤 إرسال ملف لزميل",
+        'send_to': "أرسل إلى (المستلم):",
+        'choose_user_placeholder': "--- اختر المستخدم ---",
+        'your_message': "رسالة مرافقة (اختياري):",
+        'choose_file': "📎 **اختر الملف لرفعه**",
+        'send_now': "إرسال الملف الآن",
+        'send_success': "تم إرسال الملف إلى",
+        'send_error': "يرجى اختيار مستلم صحيح ورفع ملف.",
+        'sending': "جاري الإرسال...",
+        'to_label': "مرسل إلى:",
+        'no_active_users': "لا يوجد مستخدمين نشطين لإرسال الملفات إليهم حالياً.",
+        'nav_main_user': "📂 المファイル والمراسلات",
+        'nav_files': "📁 قاعدة الملفات",
+        'nav_users': "👤 إدارة المستخدمين",
+        'nav_master': "⚙️ لوحة التحكم الرئيسية",
+        'nav_reports': "📊 التقارير والرقابة",
+        'nav_files_guest': "📄 الوثائق والملفات العامة",
+        'restore_msg': "جاري استعادة هذه الشاشة بالكامل (سيتم إضافتها قريباً)."
+    },
+    'en': {
+        'welcome': "Welcome",
+        'logout': "Logout",
+        'no_inbox': "No incoming messages.",
+        'no_sent': "No sent messages.",
+        'file_not_found': "File not found",
+        'delete_btn': "🗑️ Delete",
+        'delete_success': "✅ Message deleted from your list.",
+        'inbox_title': "📥 Incoming Files & Messages",
+        'sent_title': "📤 Sent Messages",
+        'send_title': "📤 Send File to Colleague",
+        'send_to': "Send to (Recipient):",
+        'choose_user_placeholder': "--- Select User ---",
+        'your_message': "Message (Optional):",
+        'choose_file': "📎 **Choose File to Upload**",
+        'send_now': "Send File Now",
+        'send_success': "File sent to",
+        'send_error': "Please select a valid recipient and upload a file.",
+        'sending': "Sending...",
+        'to_label': "To:",
+        'no_active_users': "No active users to send files to.",
+        'nav_main_user': "📂 Files & Messages",
+        'nav_files': "📁 File Base",
+        'nav_users': "👤 Users Management",
+        'nav_master': "⚙️ Main Dashboard",
+        'nav_reports': "📊 Reports & Oversight",
+        'nav_files_guest': "📄 Public Documents",
+        'restore_msg': "This screen is currently being restored (will be added soon)."
+    }
+}
+
+t = TRANS[st.session_state.lang]
+
 # =============================================================
-# 🎨 التصميم النهائي (مع إصلاح زرار الرفع للموبايل)
+# 🎨 التصميم النهائي
 # =============================================================
 st.markdown(f"""
 <style>
@@ -116,7 +178,7 @@ st.markdown(f"""
         border-radius: 8px !important;
     }}
 
-    /* ✅ حل زرار الرفع (نسخة الهجوم الأخيرة) */
+    /* حل زرار الرفع */
     .stFileUploader div[data-testid="stFileUploadDropzone"] {{
         background-color: #ffffff !important !important;
         border: 1px dashed #94a3b8 !important !important;
@@ -135,7 +197,6 @@ st.markdown(f"""
         border-radius: 6px !important !important;
         box-shadow: none !important !important;
     }}
-    /* إخفاء النص الإنجليزي نهائياً */
     .stFileUploader div[data-testid="stFileUploadDropzone"] button span {{
         display: none !important !important;
     }}
@@ -253,10 +314,7 @@ if not st.session_state.logged_in:
             st.error("خطأ في بيانات الدخول / Invalid Credentials")
 
 else:
-    # =============================================================
-    # ✅ الترجمات وترتيب القائمة
-    # =============================================================
-    t = TRANSLATIONS[st.session_state.lang]
+    t = TRANS[st.session_state.lang]
 
     is_guest = (st.session_state.role == "guest")
     is_admin = (st.session_state.role == "Admin" or st.session_state.user == "admin")
@@ -402,15 +460,11 @@ else:
                 if not active_users:
                     st.warning(t['no_active_users'])
                 else:
-                    # ✅ إصلاح نص "اختر المستخدم"
                     recipient = st.selectbox(t['send_to'], [t['choose_user_placeholder']] + active_users)
                     msg = st.text_area(t['your_message'])
-                    
-                    # ✅ استخدام file_uploader مع خيارات تحديث
                     uploaded_file = st.file_uploader(t['choose_file'], type=None, help="200 MB كحد أقصى.")
                     
                     if st.form_submit_button(t['send_now']):
-                        # ✅ التحقق من المستخدم
                         if uploaded_file and recipient and recipient != t['choose_user_placeholder']:
                             progress_bar = st.progress(0, t['sending'])
                             user_folder = os.path.join("storage", "UserFiles", recipient)
