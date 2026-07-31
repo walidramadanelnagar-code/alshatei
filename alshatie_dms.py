@@ -241,10 +241,10 @@ else:
 
     if is_guest:
         main_title = "📄 الوثائق والملفات العامة"
-        files_screen_title = "📂 قاعدة الملفات"
+        files_screen_title = "📂 قاعدة المملفات"
     else:
         main_title = t['nav_main_user']
-        files_screen_title = "📁 قاعدة الملفات"
+        files_screen_title = t['nav_files']
     
     nav_options = [main_title, files_screen_title]
     if is_admin or is_manager:
@@ -1009,7 +1009,8 @@ else:
         st.title("📊 " + t["nav_reports"])
         
         if is_admin:
-            with st.expander("أرشيف التقارير"): # 👈 تم إزالة الرمز
+            st.markdown(f"**أرشيف التقارير**") # العنوان خارج الـ expander
+            with st.expander(""): # الـ expander فارغ من الداخل
                 with get_connection() as conn:
                     cursor = conn.cursor()
                     cursor.execute("SELECT id, title, created_by, created_at FROM reports WHERE status = 'archived' ORDER BY created_at DESC")
@@ -1036,7 +1037,8 @@ else:
                     st.caption("لا توجد تقارير مؤرشفة.")
 
         if is_admin or is_manager:
-            with st.expander("إنشاء تقرير جديد"): # 👈 تم إزالة الرمز
+            st.markdown(f"**إنشاء تقرير جديد**") # العنوان خارج الـ expander
+            with st.expander(""): # الـ expander فارغ من الداخل
                 with st.form("create_report_form", clear_on_submit=True):
                     r_title = st.text_input("عنوان التقرير")
                     r_desc = st.text_area("وصف التقرير")
@@ -1076,7 +1078,8 @@ else:
             st.info("لا توجد تقارير نشطة.")
         
         for r_id, r_title, r_desc, r_creator, r_date in reports_list:
-            with st.expander(r_title): # 👈 تم إزالة الرمز
+            st.markdown(f"**{r_title}**") # العنوان خارج الـ expander
+            with st.expander(""): # الـ expander فارغ من الداخل
                 st.caption(r_desc if r_desc else "لا يوجد وصف.")
                 with get_connection() as conn:
                     cur = conn.cursor()
