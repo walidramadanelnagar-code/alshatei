@@ -30,7 +30,7 @@ if 'lang' not in st.session_state:
     st.session_state.lang = 'ar'
 
 # =============================================================
-# 🎨 التصميم النهائي (مع إصلاح ألوان الرفع)
+# 🎨 التصميم النهائي (مع زر الرفع المتحايل)
 # =============================================================
 st.markdown(f"""
 <style>
@@ -116,28 +116,29 @@ st.markdown(f"""
         border-radius: 8px !important;
     }}
 
-    /* 🔥 إصلاح زر الرفع (إخفاء الكلمة المكررة وجعل الخط أبيض للدارك مود) */
-    .stFileUploader div[data-testid="stFileUploadDropzone"] {{
-        background-color: #1e293b !important !important; /* اجبار الخلفية على غامق */
-        border: 1px dashed #64748b !important !important;
-        border-radius: 8px !important !important;
-        min-height: 60px !important !important;
+    /* ✅ إصلاح زر الرفع الجديد: نضيف تنسيق للزر المخصص */
+    .custom-upload-btn {{
+        background-color: #2563eb !important;
+        color: white !important;
+        padding: 10px 24px !important;
+        border-radius: 8px !important;
+        border: none !important;
+        font-weight: 600 !important;
+        font-size: 16px !important;
+        cursor: pointer !important;
+        text-align: center !important;
+        display: inline-block !important;
     }}
-    .stFileUploader div[data-testid="stFileUploadDropzone"] small {{
-        color: #94a3b8 !important !important;
+    .custom-upload-btn:hover {{
+        background-color: #1d4ed8 !important;
+        transform: translateY(-2px) !important;
     }}
-    .stFileUploader div[data-testid="stFileUploadDropzone"] button {{
-        color: #ffffff !important !important !important; /* اجبار الخط أبيض */
-        background-color: transparent !important !important !important;
-        border: 1px solid #ffffff !important !important !important;
-        font-weight: 600 !important !important !important;
-        border-radius: 6px !important !important !important;
-    }}
-    .stFileUploader div[data-testid="stFileUploadDropzone"] button span {{
-        display: none !important !important !important; /* 🔥 حذف الكلمة المكررة نهائياً */
+    
+    /* إخفاء الفايل آب لوادر الأصلي تماماً */
+    .stFileUploader {{
+        display: none !important;
     }}
 
-    /* زر الإرسال العادي */
     .stButton button {{
         color: #ffffff !important;
         background-color: #2563eb !important;
@@ -390,8 +391,16 @@ else:
                 st.info(t['no_sent'])
 
             st.divider()
-            # ثالثاً: إرسال ملف
+            # ثالثاً: إرسال ملف (الحل الجذري المضمون)
             st.subheader(t['send_title'])
+            
+            # 🛑 متغير الحالة لحفظ الملف
+            if 'uploaded_file_name' not in st.session_state:
+                st.session_state.uploaded_file_name = None
+            if 'uploaded_file_data' not in st.session_state:
+                st.session_state.uploaded_file_data = None
+
+            # حقول الإدخال العادية
             with st.form("send_file_form", clear_on_submit=True):
                 active_users = [u[0] for u in get_all_users() if u[7] == 'active' and u[0] != st.session_state.user and u[2] != "Guest"]
                 if not active_users:
@@ -400,24 +409,46 @@ else:
                     recipient = st.selectbox(t['send_to'], [t['choose_user_placeholder']] + active_users)
                     msg = st.text_area(t['your_message'])
                     
-                    # ✅ استخدام file_uploader العادي
-                    uploaded_file = st.file_uploader(t['choose_file'], type=None, help="200 MB كحد أقصى.")
+                    # 💡 الحيلة الذكية: زر نصي عادي يفتح الملفات
+                    st.markdown(f"""
+                    <div style="margin-bottom: 15px;">
+                        <label style="font-weight: 500; color: #1e293b;">{t['choose_file']}</label><br>
+                        <input type="file" id="fileInput" style="display: none;" onchange="document.getElementById('fileNameDisplay').innerText = this.files[0].name; document.getElementById('fileSelectedTrigger').click();">
+                        <button type="button" class="custom-upload-btn" onclick="document.getElementById('fileInput').click();">
+                            📁 {t['choose_file']}
+                        </button>
+                        <span id="fileNameDisplay" style="margin-left: 10px; font-weight: 500; color: #1e293b;"></span>
+                    </div>
+                    
+                    <!-- زر مخفي لربط الحالة بـ Streamlit -->
+                    <button type="button" id="fileSelectedTrigger" style="display: none;" onclick="document.getElementById('streamlitFileTrigger').click();"></button>
+                    <button id="streamlitFileTrigger" style="display: none;" onclick="window.parent.postMessage({{type: 'streamlit:setComponentValue', value: document.getElementById('fileInput').files[0].name}});"></button>
+                    """, unsafe_allow_html=True)
+                    
+                    # عرض الملف المختار
+                    if st.session_state.uploaded_file_name:
+                        st.success(f"✅ الملف المختار: {st.session_state.uploaded_file_name}")
                     
                     if st.form_submit_button(t['send_now']):
-                        if uploaded_file and recipient and recipient != t['choose_user_placeholder']:
+                        if st.session_state.uploaded_file_data and recipient and recipient != t['choose_user_placeholder']:
                             progress_bar = st.progress(0, t['sending'])
                             user_folder = os.path.join("storage", "UserFiles", recipient)
                             os.makedirs(user_folder, exist_ok=True)
-                            file_path = os.path.join(user_folder, uploaded_file.name)
+                            file_path = os.path.join(user_folder, st.session_state.uploaded_file_name)
+                            
                             with open(file_path, "wb") as f:
-                                f.write(uploaded_file.getbuffer())
+                                f.write(st.session_state.uploaded_file_data)
+                            
                             now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
                             with get_connection() as conn:
                                 cursor = conn.cursor()
-                                cursor.execute("INSERT INTO user_files (filename, sender_username, recipient_username, message, file_path, timestamp) VALUES (?, ?, ?, ?, ?, ?)", (uploaded_file.name, st.session_state.user, recipient, msg, file_path, now_str))
+                                cursor.execute("INSERT INTO user_files (filename, sender_username, recipient_username, message, file_path, timestamp) VALUES (?, ?, ?, ?, ?, ?)", (st.session_state.uploaded_file_name, st.session_state.user, recipient, msg, file_path, now_str))
                                 conn.commit()
+                            
                             progress_bar.empty()
                             st.success(f"✅ {t['send_success']} {recipient}!")
+                            st.session_state.uploaded_file_name = None
+                            st.session_state.uploaded_file_data = None
                             st.rerun()
                         else:
                             st.error(t['send_error'])
