@@ -749,7 +749,7 @@ else:
                         st.caption("لا يوجد مجلدات فرعية.")
 
     # ----------------------------------------------------
-    # 3. التقارير والرقابة (التبويبة الثالثة) - معدل
+    # 3. التقارير والرقابة (التبويبة الثالثة) - المعدل
     # ----------------------------------------------------
     with tabs[2]:
         st.title("📊 " + t['nav_reports'])
@@ -776,11 +776,9 @@ else:
             st.info("لا توجد تقارير نشطة.")
         
         for r_id, r_title, r_desc, r_creator, r_date in reports_list:
-            # ✅ تقليل التوسيع: نعرض التقرير بشكل مضغوط
             with st.expander(f"📋 {r_title} (بواسطة: {r_creator} - {r_date})"):
                 st.caption(r_desc if r_desc else "لا يوجد وصف.")
                 
-                # عرض البنود
                 with get_connection() as conn:
                     cur = conn.cursor()
                     cur.execute("SELECT id, title, assigned_to_username, status, file_name, uploaded_by, uploaded_at, created_at, approved_by, approved_at FROM report_items WHERE report_id = ? ORDER BY id ASC", (r_id,))
@@ -790,83 +788,70 @@ else:
                     for idx, item in enumerate(all_items):
                         (i_id, i_title, i_user, i_stat, i_file, i_up_by, i_up_at, i_created, i_app_by, i_app_at) = item
                         
-                        # ✅ عرض البند بشكل مضغوط في صف واحد
-                        cols = st.columns([3, 2, 1, 1, 1, 1])
+                        # ✅ عرض البند بشكل مضغوط في 4 أعمدة
+                        cols = st.columns([4, 2, 1.5, 2.5])
+                        
+                        # العمود 1: العنوان والمكلف
                         cols[0].markdown(f"**{i_title}**")
-                        cols[1].caption(f"👤 {i_user}")
+                        cols[0].caption(f"👤 {i_user}")
                         
+                        # العمود 2: الحالة
                         if i_stat == "pending":
-                            cols[2].warning("⏳")
+                            cols[1].warning("⏳ في الانتظار")
                         elif i_stat == "uploaded":
-                            cols[2].info("📤")
+                            cols[1].info("📤 تم الرفع")
                         else:
-                            cols[2].success("✅")
+                            cols[1].success("✅ مقبول")
                         
-                        # ✅ أزرار التعديل والحذف والترتيب (للمسؤول أو منشئ التقرير)
+                        # العمود 3: أزرار الترتيب (للمسؤول أو المنشئ)
                         can_manage = is_admin or r_creator == st.session_state.user
-                        
                         if can_manage:
-                            # زر رفع للترتيب
-                            if idx > 0 and cols[3].button("⬆️", key=f"up_{r_id}_{i_id}"):
-                                with get_connection() as conn:
-                                    cursor = conn.cursor()
-                                    # تبديل الترتيب مع العنصر السابق
-                                    cursor.execute("SELECT id FROM report_items WHERE report_id = ? ORDER BY id ASC", (r_id,))
-                                    items_order = [row[0] for row in cursor.fetchall()]
-                                    if i_id in items_order:
-                                        pos = items_order.index(i_id)
-                                        if pos > 0:
-                                            # تبديل المعرفات مؤقتاً عن طريق تحديث الترتيب
-                                            cursor.execute("UPDATE report_items SET id = -id WHERE id = ?", (i_id,))
-                                            cursor.execute("UPDATE report_items SET id = -id WHERE id = ?", (items_order[pos-1],))
-                                            cursor.execute("UPDATE report_items SET id = ? WHERE id = ?", (items_order[pos-1], i_id))
-                                            cursor.execute("UPDATE report_items SET id = ? WHERE id = ?", (i_id, items_order[pos-1]))
-                                            conn.commit()
-                                    st.rerun()
-                            
-                            # زر خفض للترتيب
-                            if idx < len(all_items) - 1 and cols[4].button("⬇️", key=f"down_{r_id}_{i_id}"):
-                                with get_connection() as conn:
-                                    cursor = conn.cursor()
-                                    cursor.execute("SELECT id FROM report_items WHERE report_id = ? ORDER BY id ASC", (r_id,))
-                                    items_order = [row[0] for row in cursor.fetchall()]
-                                    if i_id in items_order:
-                                        pos = items_order.index(i_id)
-                                        if pos < len(items_order) - 1:
-                                            cursor.execute("UPDATE report_items SET id = -id WHERE id = ?", (i_id,))
-                                            cursor.execute("UPDATE report_items SET id = -id WHERE id = ?", (items_order[pos+1],))
-                                            cursor.execute("UPDATE report_items SET id = ? WHERE id = ?", (items_order[pos+1], i_id))
-                                            cursor.execute("UPDATE report_items SET id = ? WHERE id = ?", (i_id, items_order[pos+1]))
-                                            conn.commit()
-                                    st.rerun()
-                            
-                            # زر حذف البند
-                            if cols[5].button("🗑️", key=f"del_{r_id}_{i_id}"):
-                                st.session_state[f"confirm_del_item_{i_id}"] = True
-                            
-                            if st.session_state.get(f"confirm_del_item_{i_id}", False):
-                                st.warning(f"هل تريد حذف البند '{i_title}'؟")
-                                col_y, col_n = st.columns(2)
-                                if col_y.button("✅ نعم", key=f"yes_del_{i_id}"):
+                            btn_cols = cols[2].columns(3)
+                            if idx > 0:
+                                if btn_cols[0].button("↑", key=f"up_{r_id}_{i_id}", use_container_width=True):
                                     with get_connection() as conn:
-                                        conn.cursor().execute("DELETE FROM report_items WHERE id = ?", (i_id,))
-                                        conn.commit()
-                                    del st.session_state[f"confirm_del_item_{i_id}"]
-                                    st.success("تم حذف البند.")
-                                    st.rerun()
-                                if col_n.button("❌ إلغاء", key=f"no_del_{i_id}"):
-                                    del st.session_state[f"confirm_del_item_{i_id}"]
-                                    st.rerun()
+                                        cursor = conn.cursor()
+                                        cursor.execute("SELECT id FROM report_items WHERE report_id = ? ORDER BY id ASC", (r_id,))
+                                        items_order = [row[0] for row in cursor.fetchall()]
+                                        if i_id in items_order:
+                                            pos = items_order.index(i_id)
+                                            if pos > 0:
+                                                cursor.execute("UPDATE report_items SET id = -id WHERE id = ?", (i_id,))
+                                                cursor.execute("UPDATE report_items SET id = -id WHERE id = ?", (items_order[pos-1],))
+                                                cursor.execute("UPDATE report_items SET id = ? WHERE id = ?", (items_order[pos-1], i_id))
+                                                cursor.execute("UPDATE report_items SET id = ? WHERE id = ?", (i_id, items_order[pos-1]))
+                                                conn.commit()
+                                        st.rerun()
+                            if idx < len(all_items) - 1:
+                                if btn_cols[1].button("↓", key=f"down_{r_id}_{i_id}", use_container_width=True):
+                                    with get_connection() as conn:
+                                        cursor = conn.cursor()
+                                        cursor.execute("SELECT id FROM report_items WHERE report_id = ? ORDER BY id ASC", (r_id,))
+                                        items_order = [row[0] for row in cursor.fetchall()]
+                                        if i_id in items_order:
+                                            pos = items_order.index(i_id)
+                                            if pos < len(items_order) - 1:
+                                                cursor.execute("UPDATE report_items SET id = -id WHERE id = ?", (i_id,))
+                                                cursor.execute("UPDATE report_items SET id = -id WHERE id = ?", (items_order[pos+1],))
+                                                cursor.execute("UPDATE report_items SET id = ? WHERE id = ?", (items_order[pos+1], i_id))
+                                                cursor.execute("UPDATE report_items SET id = ? WHERE id = ?", (i_id, items_order[pos+1]))
+                                                conn.commit()
+                                        st.rerun()
+                            if btn_cols[2].button("🗑", key=f"del_{r_id}_{i_id}", use_container_width=True):
+                                st.session_state[f"confirm_del_item_{i_id}"] = True
+                        
+                        # العمود 4: الإجراءات (تحميل - قبول - رفع)
+                        action_cols = cols[3].columns(1)
                         
                         # عرض ملف إذا موجود
                         if i_file and os.path.exists(os.path.join("storage", "Reports", str(i_id), i_file)):
                             with open(os.path.join("storage", "Reports", str(i_id), i_file), "rb") as f:
-                                st.download_button("📥 تحميل", f, file_name=i_file, key=f"dl_item_{i_id}", use_container_width=True)
+                                action_cols[0].download_button("📥 تحميل", f, file_name=i_file, key=f"dl_item_{i_id}", use_container_width=True)
                         
                         # قبول البند (للمسؤول أو المنشئ)
                         can_approve = is_admin or r_creator == st.session_state.user
                         if i_stat == "uploaded" and can_approve:
-                            if st.button(f"✅ قبول", key=f"app_{i_id}"):
+                            if action_cols[0].button("✅ قبول", key=f"app_{i_id}", use_container_width=True):
                                 now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
                                 with get_connection() as conn:
                                     conn.cursor().execute("UPDATE report_items SET status = 'approved', approved_by = ?, approved_at = ? WHERE id = ?", (st.session_state.user, now_str, i_id))
@@ -892,11 +877,27 @@ else:
                                     st.rerun()
                                 else:
                                     st.error("اختر ملف أولاً.")
+                        
+                        # عرض تأكيد الحذف
+                        if st.session_state.get(f"confirm_del_item_{i_id}", False):
+                            st.warning(f"هل تريد حذف البند '{i_title}'؟")
+                            col_y, col_n = st.columns(2)
+                            if col_y.button("✅ نعم", key=f"yes_del_{i_id}"):
+                                with get_connection() as conn:
+                                    conn.cursor().execute("DELETE FROM report_items WHERE id = ?", (i_id,))
+                                    conn.commit()
+                                del st.session_state[f"confirm_del_item_{i_id}"]
+                                st.success("تم حذف البند.")
+                                st.rerun()
+                            if col_n.button("❌ إلغاء", key=f"no_del_{i_id}"):
+                                del st.session_state[f"confirm_del_item_{i_id}"]
+                                st.rerun()
+                        
+                        st.divider()
                 
                 # ✅ إضافة بند جديد للتقرير (مضغوط)
                 can_add_item = is_admin or r_creator == st.session_state.user
                 if can_add_item:
-                    st.divider()
                     with st.form(key=f"add_item_{r_id}", clear_on_submit=True):
                         col1, col2, col3 = st.columns([2, 2, 1])
                         item_title = col1.text_input("عنوان البند", placeholder="أدخل عنوان البند...")
