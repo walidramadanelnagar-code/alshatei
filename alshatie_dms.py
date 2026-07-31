@@ -30,7 +30,7 @@ if 'lang' not in st.session_state:
     st.session_state.lang = 'ar'
 
 # =============================================================
-# 🎨 التصميم النهائي
+# 🎨 التصميم النهائي (نسخة خالية من تداخل .arr)
 # =============================================================
 st.markdown(f"""
 <style>
@@ -117,28 +117,8 @@ st.markdown(f"""
         border-radius: 8px !important;
     }}
 
-    /* تنسيق أزرار المجلدات */
-    .stButton button.folder-btn {{
-        background-color: #ffffff !important !important;
-        color: #2563eb !important !important;
-        border: 1px solid #e2e8f0 !important !important;
-        border-radius: 8px !important !important;
-        padding: 12px 20px !important !important;
-        font-weight: 600 !important !important;
-        width: 100% !important !important;
-        text-align: right !important !important;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.02) !important !important;
-        transition: 0.2s !important;
-    }}
-    .stButton button.folder-btn:hover {{
-        background-color: #f1f5f9 !important !important;
-        border-color: #2563eb !important !important;
-        transform: translateY(-2px) !important;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05) !important;
-    }}
-
-    /* الأزرار العادية */
-    .stButton button:not(.folder-btn) {{
+    /* الأزرار */
+    .stButton button {{
         color: #ffffff !important;
         background-color: #2563eb !important;
         border-radius: 8px !important;
@@ -147,7 +127,7 @@ st.markdown(f"""
         font-weight: 600 !important;
         transition: 0.3s;
     }}
-    .stButton button:not(.folder-btn):hover {{ background-color: #1d4ed8 !important; transform: translateY(-2px); }}
+    .stButton button:hover {{ background-color: #1d4ed8 !important; }}
     
     .stButton button[kind="secondary"],
     .stButton button:not([kind]) {{ background-color: #1e293b !important; }}
@@ -660,7 +640,9 @@ else:
             
             col_f1, col_f2 = st.columns(2)
             with col_f1:
-                with st.expander(t['create_folder']):
+                # ✅ تحايلة التخلص من .arr: استخدام st.markdown قبل الـ container
+                st.markdown(f"📁 {t['create_folder']}")
+                with st.container(border=True):
                     with st.form("create_main_folder_form", clear_on_submit=True):
                         new_m = st.text_input("اسم المجلد الرئيسي الجديد").strip()
                         if st.form_submit_button("إنشاء"):
@@ -678,7 +660,9 @@ else:
                                         st.error("المجلد موجود مسبقاً!")
 
             with col_f2:
-                with st.expander(t['create_sub']):
+                # ✅ تحايلة التخلص من .arr: استخدام st.markdown قبل الـ container
+                st.markdown(f"➕ {t['create_sub']}")
+                with st.container(border=True):
                     with st.form("create_sub_folder_form", clear_on_submit=True):
                         allowed_p = get_all_folders() if is_admin else st.session_state.allowed
                         p_choice = st.selectbox("اختر المجلد الرئيسي", allowed_p)
@@ -697,7 +681,9 @@ else:
                                     except Exception:
                                         st.error("المجلد الفرعي موجود مسبقاً!")
 
-            with st.expander(t['manage_folders']):
+            # ✅ تحايلة التخلص من .arr: استخدام st.markdown قبل الـ container
+            st.markdown(f"⚙️ {t['manage_folders']}")
+            with st.container(border=True):
                 m_tab1, m_tab2 = st.tabs([t['rename_tab'], t['delete_tab']])
                 
                 with m_tab1:
