@@ -260,6 +260,12 @@ else:
                 st.session_state.lang = 'en'
                 st.rerun()
         with col_btn:
+            # ✅ رجعت رسالة الترحيب هنا
+            st.markdown(f"""
+            <div style="display: flex; align-items: center; justify-content: flex-end; gap: 15px; margin-top: 5px;">
+                <span style="font-size: 16px; font-weight: 600; color: #0f172a;">👋 مرحباً، {st.session_state.user}</span>
+            </div>
+            """, unsafe_allow_html=True)
             if st.button(t['logout'], use_container_width=True):
                 log_activity(st.session_state.user, "LOGOUT", "", "System", "Logged out")
                 st.session_state.logged_in = False
@@ -278,10 +284,11 @@ else:
         st.title(main_title)
         
         if is_guest:
+            # الضيف يشوف بس الملفات اللي اتبعتتله (الوارد فقط)
             with get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute("""
-                    SELECT filename, file_path, timestamp 
+                    SELECT filename, file_path, timestamp, sender_username, message
                     FROM user_files 
                     WHERE recipient_username = ?
                     ORDER BY timestamp DESC
@@ -289,19 +296,22 @@ else:
                 guest_files = cursor.fetchall()
             
             if guest_files:
-                for f_name, f_path, time_str in guest_files:
-                    col1, col2 = st.columns([4, 1])
+                for f_name, f_path, time_str, sender, msg in guest_files:
+                    col1, col2, col3 = st.columns([2, 2, 1])
                     col1.markdown(f"📄 **{f_name}**")
-                    col2.caption(f"{time_str}")
+                    col2.caption(f"👤 من: {sender} | 🕒 {time_str}")
+                    if msg: col2.caption(f"📝 {msg}")
+                    
                     if os.path.exists(f_path):
                         with open(f_path, "rb") as f:
-                            st.download_button("⬇️ تحميل", f, file_name=f_name, key=f"dl_guest_{f_name}")
+                            col3.download_button("⬇️ تحميل", f, file_name=f_name, key=f"dl_guest_{f_name}")
                     else:
-                        st.caption("الملف غير موجود")
+                        col3.caption("الملف غير موجود")
             else:
                 st.info(t['no_inbox'])
 
         else:
+            # هنا شاشة اليوزر العادي (ليها المرسلات والوارد)
             st.subheader(t['send_title'])
             with st.form("send_file_form", clear_on_submit=True):
                 active_users = [u[0] for u in get_all_users() if u[7] == 'active' and u[0] != st.session_state.user and u[2] != "Guest"]
@@ -454,9 +464,10 @@ else:
 
         st.markdown("---")
 
-        def render_explorer_files(files_list, current_folder_path):
+        # دالة لعرض الملفات (سواء في جوة مجلد أو في الرئيسية)
+        def render_explorer_files(files_list, current_folder_path, can_delete=False):
             if not files_list:
-                st.caption("📭 هذا المجلد فارغ.")
+                st.caption("📭 لا توجد ملفات في هذا المسار.")
                 return
             
             for row_id, f_name, uploader, time_str in files_list:
@@ -478,8 +489,8 @@ else:
                     with open(f_path, "rb") as f:
                         c3.download_button("⬇️ تحميل", f, file_name=f_name, key=f"dl_ex_{row_id}", use_container_width=True)
                 
-                can_delete_file = (not is_guest) and (st.session_state.nav_path[0] in st.session_state.allowed or is_admin)
-                if can_delete_file:
+                # الحذف فقط للمسؤول أو المانجر (وليس للضيف)
+                if can_delete:
                     if c4.button("🗑️", key=f"del_ex_{row_id}", use_container_width=True):
                         st.session_state[f"confirm_ex_{row_id}"] = True
 
@@ -505,22 +516,62 @@ else:
                             del st.session_state[f"confirm_ex_{row_id}"]
                             st.rerun()
 
+        # ✅ تعديل رئيسي: لما يكون في ROOT (الرئيسية) و المستخدم ضيف أو عنده صلاحيات
         if current_display_folder == "ROOT":
-            st.subheader("📁 المجلدات الرئيسية")
+            st.subheader("📁 عرض الملفات المسموح بها")
             allowed_folders = get_all_folders() if is_admin else st.session_state.allowed
             
+            # فلترة المجلدات حسب البحث
             if selected_main_folder_filter != "الكل":
                 if selected_main_folder_filter in allowed_folders:
                     allowed_folders = [selected_main_folder_filter]
                 else:
                     allowed_folders = []
 
+            all_allowed_files = []
+            
+            # 1. جلب كل الملفات من كل المجلدات المسموح بها مرة واحدة
+            if allowed_folders:
+                placeholders = ','.join(['?'] * len(allowed_folders))
+                query = f"""
+                    SELECT id, filename, uploaded_by, timestamp, folder 
+                    FROM file_logs 
+                    WHERE status = 'active' 
+                    AND folder IN ({placeholders})
+                """
+                with get_connection() as conn:
+                    cursor = conn.cursor()
+                    cursor.execute(query, allowed_folders)
+                    rows = cursor.fetchall()
+                    for r in rows:
+                        # نتأكد إن الملف فعلاً موجود على الهارد ديسك
+                        check_path = os.path.join("storage", r[4], r[1])
+                        if os.path.exists(check_path):
+                            all_allowed_files.append(r)
+            
+            # 2. فلترة الملفات (بحث، مستخدم، امتداد)
+            def check_file_filter(f_name, uploader):
+                if search_keyword and search_keyword not in f_name.lower(): return False
+                if selected_user_filter != "الكل" and selected_user_filter != uploader: return False
+                if file_extension_filter != "الكل" and not f_name.lower().endswith(f".{file_extension_filter.lower()}"): return False
+                return True
+
+            filtered_flat_files = [f for f in all_allowed_files if check_file_filter(f[1], f[2])]
+
+            # 3. عرض الملفات (الضيف ممنوع من الحذف)
+            can_delete_root = (not is_guest) and is_admin
+            render_explorer_files([(f[0], f[1], f[2], f[3]) for f in filtered_flat_files], "", can_delete_root)
+            
+            # 4. عرض أزرار المجلدات للدخول ليها (للمستخدمين العاديين والضيف)
+            st.markdown("---")
+            st.subheader("📁 المجلدات الرئيسية")
             for folder in allowed_folders:
                 if st.button(f"📂 {folder}", key=f"btn_enter_{folder}", use_container_width=True):
                     go_to_folder(folder, None)
                     st.rerun()
                     
         else:
+            # لما يكون المستخدم داخل مجلد فرعي
             with get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute("SELECT id, filename, uploaded_by, timestamp FROM file_logs WHERE folder = ? AND status = 'active' ORDER BY timestamp DESC", (current_display_folder_tag,))
@@ -538,6 +589,7 @@ else:
 
             filtered_files = [f for f in files_in_folder if check_file_filter(f[1], f[2])]
 
+            # عرض المجلدات الفرعية
             if sub_folders_in_current:
                 st.markdown("##### 📂 المجلدات الفرعية:")
                 col_sub1, col_sub2, col_sub3 = st.columns(3)
@@ -560,8 +612,10 @@ else:
                 st.markdown("---")
 
             st.markdown(f"##### 📄 ملفات المجلد `{current_display_folder}`:")
-            render_explorer_files(filtered_files, current_display_folder_tag)
+            can_delete_sub = (not is_guest) and (st.session_state.nav_path[0] in st.session_state.allowed or is_admin)
+            render_explorer_files(filtered_files, current_display_folder_tag, can_delete_sub)
 
+        # ✅ منع الضيف تماماً من رفع أي ملفات
         if not is_guest:
             st.divider()
             st.subheader(t['upload_section'])
@@ -622,7 +676,8 @@ else:
                 st.info(t['folder_empty'])
 
         st.markdown("---")
-        if is_admin or is_manager:
+        # ✅ منع الضيف من إدارة المجلدات
+        if not is_guest and (is_admin or is_manager):
             st.subheader(t['manage_folders'])
             
             col_f1, col_f2 = st.columns(2)
@@ -776,8 +831,8 @@ else:
             st.info("لا توجد تقارير نشطة.")
         
         for r_id, r_title, r_desc, r_creator, r_date in reports_list:
-            st.caption(f"📋 **{r_title}** - بواسطة: {r_creator} - {r_date}") # <--- خرجنا الكلام ده بره
-            with st.expander(f"", expanded=False): # <--- الزر بقى فارغ تماماً
+            st.caption(f"📋 **{r_title}** - بواسطة: {r_creator} - {r_date}")
+            with st.expander(f"", expanded=False):
                 st.caption(r_desc if r_desc else "لا يوجد وصف.")
                 
                 with get_connection() as conn:
@@ -789,14 +844,11 @@ else:
                     for idx, item in enumerate(all_items):
                         (i_id, i_title, i_user, i_stat, i_file, i_up_by, i_up_at, i_created, i_app_by, i_app_at) = item
                         
-                        # ✅ عرض البند بشكل مضغوط في 4 أعمدة
                         cols = st.columns([3, 2, 1.5, 3])
                         
-                        # العمود 1: العنوان والمكلف
                         cols[0].markdown(f"**{i_title}**")
                         cols[0].caption(f"👤 {i_user}")
                         
-                        # العمود 2: الحالة
                         if i_stat == "pending":
                             cols[1].warning("⏳ في الانتظار")
                         elif i_stat == "uploaded":
@@ -804,17 +856,14 @@ else:
                         else:
                             cols[1].success("✅ مقبول")
                         
-                        # العمود 3: أزرار الترتيب والتعديل (للمسؤول أو المنشئ)
                         can_manage = is_admin or r_creator == st.session_state.user
                         if can_manage:
                             btn_cols = cols[2].columns(4)
                             
-                            # زر رفع للترتيب
                             if idx > 0:
                                 if btn_cols[0].button("↑", key=f"up_{r_id}_{i_id}", use_container_width=True):
                                     with get_connection() as conn:
                                         cursor = conn.cursor()
-                                        # نستخدم created_at للترتيب بدلاً من id
                                         cursor.execute("SELECT id, created_at FROM report_items WHERE report_id = ? ORDER BY created_at ASC", (r_id,))
                                         items = cursor.fetchall()
                                         if i_id in [item[0] for item in items]:
@@ -828,7 +877,6 @@ else:
                                                 log_activity(st.session_state.user, "MOVE_ITEM_UP", i_title, f"Report {r_title}", f"Moved item up in report")
                                         st.rerun()
                             
-                            # زر خفض للترتيب
                             if idx < len(all_items) - 1:
                                 if btn_cols[1].button("↓", key=f"down_{r_id}_{i_id}", use_container_width=True):
                                     with get_connection() as conn:
@@ -846,15 +894,12 @@ else:
                                                 log_activity(st.session_state.user, "MOVE_ITEM_DOWN", i_title, f"Report {r_title}", f"Moved item down in report")
                                         st.rerun()
                             
-                            # زر تعديل البند
                             if btn_cols[2].button("✏️", key=f"edit_{r_id}_{i_id}", use_container_width=True):
                                 st.session_state[f"edit_item_{i_id}"] = True
                             
-                            # زر حذف البند
                             if btn_cols[3].button("🗑", key=f"del_{r_id}_{i_id}", use_container_width=True):
                                 st.session_state[f"confirm_del_item_{i_id}"] = True
                         
-                        # ✅ نموذج تعديل البند
                         if st.session_state.get(f"edit_item_{i_id}", False):
                             with st.expander(f"✏️ تعديل البند: {i_title}", expanded=True):
                                 with st.form(key=f"edit_form_{i_id}"):
@@ -875,10 +920,8 @@ else:
                                         del st.session_state[f"edit_item_{i_id}"]
                                         st.rerun()
                         
-                        # العمود 4: الإجراءات (تحميل - قبول - رفع)
                         action_cols = cols[3].columns(1)
                         
-                        # ✅ عرض ملف إذا موجود (بغض النظر عن الترتيب)
                         file_path = os.path.join("storage", "Reports", str(i_id), i_file) if i_file else None
                         if i_file and os.path.exists(file_path):
                             with open(file_path, "rb") as f:
@@ -887,7 +930,6 @@ else:
                             if i_file:
                                 action_cols[0].caption("⚠️ الملف غير موجود")
                         
-                        # قبول البند (للمسؤول أو المنشئ)
                         can_approve = is_admin or r_creator == st.session_state.user
                         if i_stat == "uploaded" and can_approve:
                             if action_cols[0].button("✅ قبول", key=f"app_{i_id}", use_container_width=True):
@@ -899,7 +941,6 @@ else:
                                 st.success("تم قبول البند.")
                                 st.rerun()
                         
-                        # رفع ملف للبند (للمكلف فقط)
                         if i_stat != "approved" and i_user == st.session_state.user:
                             uploaded_file = st.file_uploader(f"رفع ملف", key=f"upl_{i_id}")
                             if st.button(f"رفع وتحديث", key=f"btn_up_{i_id}"):
@@ -919,12 +960,10 @@ else:
                                 else:
                                     st.error("اختر ملف أولاً.")
                         
-                        # عرض تأكيد الحذف
                         if st.session_state.get(f"confirm_del_item_{i_id}", False):
                             st.warning(f"هل تريد حذف البند '{i_title}'؟")
                             col_y, col_n = st.columns(2)
                             if col_y.button("✅ نعم", key=f"yes_del_{i_id}"):
-                                # حذف الملفات المرتبطة
                                 folder = os.path.join("storage", "Reports", str(i_id))
                                 if os.path.exists(folder):
                                     shutil.rmtree(folder, ignore_errors=True)
@@ -941,7 +980,6 @@ else:
                         
                         st.divider()
                 
-                # ✅ إضافة بند جديد للتقرير (مضغوط)
                 can_add_item = is_admin or r_creator == st.session_state.user
                 if can_add_item:
                     with st.form(key=f"add_item_{r_id}", clear_on_submit=True):
@@ -960,7 +998,6 @@ else:
                             else:
                                 st.error("اكتب عنواناً للبند.")
 
-                # ✅ إنهاء التقرير وأرشفته
                 if is_admin or r_creator == st.session_state.user:
                     st.markdown("---")
                     if st.button(f"🏁 إنهاء وأرشفة", key=f"complete_{r_id}", type="primary"):
@@ -972,12 +1009,12 @@ else:
                         st.rerun()
 
         # =========================================================
-        # 2️⃣ ثانياً: إنشاء تقرير جديد (مضغوط ومعدل)
+        # 2️⃣ ثانياً: إنشاء تقرير جديد (مضغوط ومعدل - للضيف ممنوع)
         # =========================================================
-        if is_admin or is_manager:
+        if (is_admin or is_manager) and not is_guest:
             st.markdown("---")
-            st.caption("➕ إنشاء تقرير جديد") # <--- الليبل فوق
-            with st.expander(f"", expanded=False): # <--- الزر فارغ تماماً ولا يحتوي على أي كلام عربي
+            st.caption("➕ إنشاء تقرير جديد")
+            with st.expander(f"", expanded=False):
                 with st.form("create_report_form", clear_on_submit=True):
                     col1, col2 = st.columns(2)
                     r_title = col1.text_input("عنوان التقرير", placeholder="أدخل عنوان التقرير...")
@@ -1005,8 +1042,8 @@ else:
         # =========================================================
         if is_admin:
             st.markdown("---")
-            st.caption("📦 أرشيف التقارير") # <--- الليبل فوق
-            with st.expander(f"", expanded=False): # <--- الزر فارغ تماماً
+            st.caption("📦 أرشيف التقارير")
+            with st.expander(f"", expanded=False):
                 with get_connection() as conn:
                     cursor = conn.cursor()
                     cursor.execute("SELECT id, title, created_by, created_at FROM reports WHERE status = 'archived' ORDER BY created_at DESC")
