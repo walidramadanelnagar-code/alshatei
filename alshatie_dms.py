@@ -230,7 +230,7 @@ if not st.session_state.logged_in:
             log_activity(username_input, "LOGIN", "", "System", "Logged into system")
             st.rerun()
         else:
-            st.error("خطأ في بيانات الدхول / Invalid Credentials")
+            st.error("خطأ في بيانات الدخول / Invalid Credentials")
 
 else:
     t = TRANSLATIONS[st.session_state.lang]
@@ -641,7 +641,9 @@ else:
             
             col_f1, col_f2 = st.columns(2)
             with col_f1:
-                with st.expander("📁 إنشاء مجلد رئيسي جديد"):
+                # ✅ تم التعديل هنا: استبدال st.expander بـ st.container
+                st.markdown("📁 إنشاء مجلد رئيسي جديد")
+                with st.container(border=True):
                     with st.form("create_main_folder_form", clear_on_submit=True):
                         new_m = st.text_input("اسم المجلد الرئيسي الجديد").strip()
                         if st.form_submit_button("إنشاء"):
@@ -659,7 +661,9 @@ else:
                                         st.error("المجلد موجود مسبقاً!")
 
             with col_f2:
-                with st.expander("➕ إنشاء مجلد فرعي"):
+                # ✅ تم التعديل هنا: استبدال st.expander بـ st.container
+                st.markdown("➕ إنشاء مجلد فرعي")
+                with st.container(border=True):
                     with st.form("create_sub_folder_form", clear_on_submit=True):
                         allowed_p = get_all_folders() if is_admin else st.session_state.allowed
                         p_choice = st.selectbox("اختر المجلد الرئيسي", allowed_p)
@@ -678,7 +682,9 @@ else:
                                     except Exception:
                                         st.error("المجلد الفرعي موجود مسبقاً!")
 
-            with st.expander("⚙️ إدارة المجلدات"):
+            # ✅ تم التعديل هنا: استبدال st.expander بـ st.container
+            st.markdown("⚙️ إدارة المجلدات")
+            with st.container(border=True):
                 m_tab1, m_tab2 = st.tabs(["✏️ إعادة تسمية مجلد", "🗑️ نقل للمحذوفات"])
                 
                 with m_tab1:
