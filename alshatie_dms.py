@@ -30,7 +30,7 @@ if 'lang' not in st.session_state:
     st.session_state.lang = 'ar'
 
 # =============================================================
-# 🎨 التصميم النهائي (نسخة الألوان المضمونة)
+# 🎨 التصميم النهائي (لن نغير لون الزرار، سنغير لون النص داخله)
 # =============================================================
 st.markdown(f"""
 <style>
@@ -116,41 +116,35 @@ st.markdown(f"""
         border-radius: 8px !important;
     }}
 
-    /* ✅ الألوان النهائية لزر رفع الملف (أبيض وأزرق) */
-    .stFileUploader div[data-testid="stFileUploadDropzone"] {{
-        background-color: #ffffff !important !important;
-        border: 1px dashed #94a3b8 !important !important;
-        border-radius: 8px !important !important;
-        min-height: 60px !important;
-    }}
-    .stFileUploader div[data-testid="stFileUploadDropzone"] small {{
-        color: #64748b !important !important;
-    }}
+    /* ✅ الحل السحري: إجبار لون النص داخل زر الرفع على الأبيض */
     .stFileUploader div[data-testid="stFileUploadDropzone"] button {{
-        background-color: #2563eb !important !important !important;
         color: #ffffff !important !important !important;
-        border: none !important !important !important;
-        font-weight: 600 !important !important !important;
-        border-radius: 6px !important !important !important;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.8) !important; /* ظل للنص ليقاوم أي خلفية */
     }}
+    
+    /* ✅ إخفاء الكلمة الإنجليزية المكررة جوه الزر */
     .stFileUploader div[data-testid="stFileUploadDropzone"] button span {{
         display: none !important !important !important;
     }}
-
-    /* ✅ زر الإرسال (اللون أزرق، والخط أبيض) */
+    
+    /* ✅ زر الإرسال (أجبر النص يكون أبيض دائماً) */
     .stButton button {{
-        background-color: #2563eb !important !important;
         color: #ffffff !important !important !important;
+        background-color: #1e293b !important !important !important;
         border: none !important !important !important;
         border-radius: 8px !important !important !important;
         padding: 10px 24px !important !important !important;
         font-weight: 600 !important !important !important;
-        text-shadow: 0 1px 2px rgba(0,0,0,0.2) !important; /* لظهور الخط في الدارك مود */
+        text-shadow: 0 1px 2px rgba(255,255,255,0.1) !important; /* مقاومة السواد */
     }}
-    .stButton button:hover {{ background-color: #1d4ed8 !important; }}
+    .stButton button:hover {{ 
+        background-color: #2563eb !important; 
+    }}
 
-    .stButton button[kind="secondary"],
-    .stButton button:not([kind]) {{ background-color: #1e293b !important; }}
+    .stButton button[kind="primary"] {{
+        color: #ffffff !important !important !important;
+        background-color: #2563eb !important;
+    }}
 
     .custom-footer {{
         position: fixed;
@@ -391,7 +385,7 @@ else:
                 st.info(t['no_sent'])
 
             st.divider()
-            # ثالثاً: إرسال ملف (نرجع للزر الأصلي بألوان مضمونة)
+            # ثالثاً: إرسال ملف (الحل النهائي بدون معاناة)
             st.subheader(t['send_title'])
             with st.form("send_file_form", clear_on_submit=True):
                 active_users = [u[0] for u in get_all_users() if u[7] == 'active' and u[0] != st.session_state.user and u[2] != "Guest"]
