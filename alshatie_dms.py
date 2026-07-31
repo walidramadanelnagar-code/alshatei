@@ -179,6 +179,28 @@ def update_db_schema():
     except:
         pass
 
+def grant_all_permissions_existing():
+    """تمنح الصلاحيات للمجلدات الحالية للأدمن والمستخدمين العاديين تلقائياً مرة واحدة"""
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT folder_name FROM custom_folders WHERE status = 'active'")
+        folders = [r[0] for r in cursor.fetchall()]
+        cursor.execute("SELECT username FROM users WHERE status = 'active' AND role != 'guest'")
+        users = [r[0] for r in cursor.fetchall()]
+        
+        for f in folders:
+            for u in users:
+                try:
+                    cursor.execute("INSERT OR IGNORE INTO folder_permissions (folder_name, username) VALUES (?, ?)", (f, u))
+                except:
+                    pass
+        conn.commit()
+        conn.close()
+        return True
+    except:
+        return False
+
 init_db()
 update_db_schema()
 
@@ -243,6 +265,16 @@ else:
     is_guest = (st.session_state.role == "guest")
     is_admin = (st.session_state.role == "Admin" or st.session_state.user == "admin")
     is_manager = (st.session_state.role == "Manager")
+
+    # ✅ عرض زر تحديث قاعدة البيانات في حالة إنشاء مجلدات قديمة
+    if is_admin:
+        if st.button("🔄 تحديث قاعدة البيانات (مرة واحدة للصلاحيات)"):
+            if grant_all_permissions_existing():
+                st.success("✅ تم منح الصلاحيات للمجلدات الحالية لجميع المستخدمين (عدا الضيوف).")
+                st.rerun()
+            else:
+                st.error("❌ حدث خطأ أثناء التحديث.")
+        st.divider()
 
     if is_guest:
         main_title = "📄 " + t['nav_files_guest']
@@ -673,8 +705,9 @@ else:
                 if can_upload_here:
                     st.caption(f"📂 سيتم رفع الملف في المسار الحالي: **{current_display_folder_tag}**")
                     
-                    # ✅ تم إرجاع الـ key الثابت لمنع البظي
-                    uploaded_file = st.file_uploader(t['choose_file'], key="upload_main_file")
+                    # ✅ استخدام key ديناميكي لتفريغ الحقل بعد الرفع
+                    upload_key = f"upload_main_file_{int(time.time())}"
+                    uploaded_file = st.file_uploader(t['choose_file'], key=upload_key)
                     
                     if st.button(t['upload_file_btn']):
                         if uploaded_file is not None:
@@ -715,7 +748,7 @@ else:
                             progress_bar.empty()
                             st.success(msg)
                             time.sleep(0.5)
-                            st.rerun()
+                            st.rerun() # ✅ الـ Rerun ده هو اللي بيفرغ المربع
                         else:
                             st.error(t['upload_error'])
                 else:
@@ -735,6 +768,10 @@ else:
                 with st.form("create_main_folder_form", clear_on_submit=True):
                     new_m = st.text_input("اسم المجلد الرئيسي الجديد").strip()
                     
+                    # ✅ اختيار المستخدمين المسموح لهم
+                    all_active_users = [u[0] for u in get_all_users() if u[7] == 'active' and u[0] != st.session_state.user and u[2] != "Guest"]
+                    selected_users = st.multiselect("المستخدمين المسموح لهم برؤية هذا المجلد:", all_active_users, default=all_active_users)
+                    
                     if st.form_submit_button("إنشاء"):
                         if new_m:
                             with get_connection() as conn:
@@ -744,8 +781,13 @@ else:
                                     conn.commit()
                                     os.makedirs(os.path.join("storage", new_m), exist_ok=True)
                                     
+                                    # ✅ منح الصلاحيات للمستخدمين المختارين
+                                    for user in selected_users:
+                                        cursor.execute("INSERT OR IGNORE INTO folder_permissions (folder_name, username) VALUES (?, ?)", (new_m, user))
+                                    conn.commit()
+                                    
                                     log_activity(st.session_state.user, "CREATE_FOLDER", "", new_m, "Created main folder")
-                                    st.success(f"تم إنشاء المجلد: {new_m}. يمكنك الآن منح الصلاحيات من تبويبة 'تعديل الصلاحيات'.")
+                                    st.success(f"تم إنشاء المجلد: {new_m}")
                                     st.rerun()
                                 except Exception as e:
                                     st.error(f"المجلد موجود مسبقاً! {str(e)}")
@@ -775,6 +817,7 @@ else:
                             st.error("يرجى تعبئة الحقول.")
 
             st.markdown("⚙️ " + t['manage_folders'])
+            # ✅ إضافة تبويبة تعديل الصلاحيات
             m_tab1, m_tab2, m_tab3 = st.tabs(["✏️ " + t['rename_tab'], "👥 تعديل الصلاحيات", "🗑️ " + t['delete_tab']])
             
             with m_tab1:
@@ -835,15 +878,7 @@ else:
                         cursor.execute("SELECT username FROM folder_permissions WHERE folder_name = ?", (target_perm_folder,))
                         current_permissions = [r[0] for r in cursor.fetchall()]
                     
-                    # ✅ أهم نقطة: التأكد إن اليوزرز اللي في default موجودين فعلاً عشان منقعش في خطأ
-                    safe_defaults = [u for u in current_permissions if u in all_active_users_for_perm]
-                    
-                    # ✅ استخدام key ثابت
-                    new_selected_users = st.multiselect(
-                        "المستخدمين المسموح لهم برؤية هذا المجلد:", 
-                        all_active_users_for_perm, 
-                        default=safe_defaults
-                    )
+                    new_selected_users = st.multiselect("المستخدمين المسموح لهم برؤية هذا المجلد:", all_active_users_for_perm, default=current_permissions)
                     
                     if st.button("تحديث الصلاحيات"):
                         with get_connection() as conn:
@@ -858,6 +893,9 @@ else:
                         st.success("✅ تم تحديث صلاحيات المجلد.")
                         st.rerun()
 
+            with m_tab2: # تم إعادة استخدام التبويبة للتوضيح، ولكن الموجود هو tab3
+                pass
+                
             with m_tab3:
                 del_m_type = st.radio("نوع المجلد", ["رئيسي (بكل محتوياته)", "فرعي فقط"], horizontal=True, key="del_m_type")
                 now_t = datetime.now().strftime("%Y-%m-%d %H:%M")
