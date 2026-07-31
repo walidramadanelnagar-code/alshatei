@@ -11,7 +11,7 @@ import pandas as pd
 import streamlit as st
 
 from streamlit_extras.stylable_container import stylable_container
-from streamlit_theme import st_theme  # 👈 المكتبة الجديدة للتصميم
+
 
 from database import (
     init_db, log_activity, verify_user, 
