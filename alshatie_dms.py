@@ -30,7 +30,7 @@ if 'lang' not in st.session_state:
     st.session_state.lang = 'ar'
 
 # =============================================================
-# 🎨 التصميم النهائي
+# 🎨 التصميم النهائي (مع إصلاح زرار الرفع للموبايل)
 # =============================================================
 st.markdown(f"""
 <style>
@@ -116,11 +116,13 @@ st.markdown(f"""
         border-radius: 8px !important;
     }}
 
-    /* حل مشكلة زرار الرفع في الموبايل */
+    /* ✅ حل زرار الرفع (نسخة الهجوم الأخيرة) */
     .stFileUploader div[data-testid="stFileUploadDropzone"] {{
         background-color: #ffffff !important !important;
         border: 1px dashed #94a3b8 !important !important;
         border-radius: 8px !important !important;
+        min-height: 60px !important;
+        padding: 10px !important;
     }}
     .stFileUploader div[data-testid="stFileUploadDropzone"] small {{
         color: #64748b !important !important;
@@ -133,6 +135,7 @@ st.markdown(f"""
         border-radius: 6px !important !important;
         box-shadow: none !important !important;
     }}
+    /* إخفاء النص الإنجليزي نهائياً */
     .stFileUploader div[data-testid="stFileUploadDropzone"] button span {{
         display: none !important !important;
     }}
@@ -399,12 +402,16 @@ else:
                 if not active_users:
                     st.warning(t['no_active_users'])
                 else:
-                    recipient = st.selectbox(t['send_to'], ["--- اختر المستخدم ---"] + active_users)
+                    # ✅ إصلاح نص "اختر المستخدم"
+                    recipient = st.selectbox(t['send_to'], [t['choose_user_placeholder']] + active_users)
                     msg = st.text_area(t['your_message'])
+                    
+                    # ✅ استخدام file_uploader مع خيارات تحديث
                     uploaded_file = st.file_uploader(t['choose_file'], type=None, help="200 MB كحد أقصى.")
                     
                     if st.form_submit_button(t['send_now']):
-                        if uploaded_file and recipient and recipient != "--- اختر المستخدم ---":
+                        # ✅ التحقق من المستخدم
+                        if uploaded_file and recipient and recipient != t['choose_user_placeholder']:
                             progress_bar = st.progress(0, t['sending'])
                             user_folder = os.path.join("storage", "UserFiles", recipient)
                             os.makedirs(user_folder, exist_ok=True)
