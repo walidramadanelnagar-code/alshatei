@@ -30,7 +30,7 @@ if 'lang' not in st.session_state:
     st.session_state.lang = 'ar'
 
 # =============================================================
-# 🎨 التصميم النهائي (لن نغير لون الزرار، سنغير لون النص داخله)
+# 🎨 التصميم النهائي (حيلة إخفاء الـ Uploader)
 # =============================================================
 st.markdown(f"""
 <style>
@@ -89,7 +89,6 @@ st.markdown(f"""
     div[data-testid="stVerticalBlock"] > div:has(div.stTextInput),
     div[data-testid="stVerticalBlock"] > div:has(div.stTextArea),
     div[data-testid="stVerticalBlock"] > div:has(div.stSelectbox),
-    div[data-testid="stVerticalBlock"] > div:has(div.stFileUploader),
     .stAlert, .stInfo, .stSuccess, .stWarning, .stError {{
         background-color: #ffffff !important;
         padding: 16px !important;
@@ -103,7 +102,7 @@ st.markdown(f"""
     .stApp, .stMarkdown, .stCaption, .stDataFrame,
     .stMetric, .stColumns, .stContainer, .stEmpty,
     .stTextInput label, .stTextArea label, .stSelectbox label,
-    .stFileUploader label, .stRadio label, .stCheckbox label {{
+    .stRadio label, .stCheckbox label {{
         color: #1e293b !important;
         font-weight: 500 !important;
     }}
@@ -116,35 +115,19 @@ st.markdown(f"""
         border-radius: 8px !important;
     }}
 
-    /* ✅ الحل السحري: إجبار لون النص داخل زر الرفع على الأبيض */
-    .stFileUploader div[data-testid="stFileUploadDropzone"] button {{
-        color: #ffffff !important !important !important;
-        text-shadow: 0 1px 2px rgba(0,0,0,0.8) !important; /* ظل للنص ليقاوم أي خلفية */
-    }}
-    
-    /* ✅ إخفاء الكلمة الإنجليزية المكررة جوه الزر */
-    .stFileUploader div[data-testid="stFileUploadDropzone"] button span {{
-        display: none !important !important !important;
-    }}
-    
-    /* ✅ زر الإرسال (أجبر النص يكون أبيض دائماً) */
+    /* ✅ زر الرفع المخصص */
     .stButton button {{
-        color: #ffffff !important !important !important;
-        background-color: #1e293b !important !important !important;
-        border: none !important !important !important;
-        border-radius: 8px !important !important !important;
-        padding: 10px 24px !important !important !important;
-        font-weight: 600 !important !important !important;
-        text-shadow: 0 1px 2px rgba(255,255,255,0.1) !important; /* مقاومة السواد */
-    }}
-    .stButton button:hover {{ 
-        background-color: #2563eb !important; 
-    }}
-
-    .stButton button[kind="primary"] {{
-        color: #ffffff !important !important !important;
+        color: #ffffff !important;
         background-color: #2563eb !important;
+        border-radius: 8px !important;
+        border: none !important;
+        padding: 10px 24px !important;
+        font-weight: 600 !important;
     }}
+    .stButton button:hover {{ background-color: #1d4ed8 !important; }}
+    
+    .stButton button[kind="secondary"],
+    .stButton button:not([kind]) {{ background-color: #1e293b !important; }}
 
     .custom-footer {{
         position: fixed;
@@ -385,8 +368,31 @@ else:
                 st.info(t['no_sent'])
 
             st.divider()
-            # ثالثاً: إرسال ملف (الحل النهائي بدون معاناة)
+            # ثالثاً: إرسال ملف (الحيلة النهائية)
             st.subheader(t['send_title'])
+            
+            # متغير الحالة للتعامل مع الملف
+            if 'selected_file' not in st.session_state:
+                st.session_state.selected_file = None
+
+            # استخدام Column لتقسيم الزر والـ Uploader المخفي
+            st.write(f"**{t['choose_file']}**")
+            col1, col2 = st.columns([1, 1])
+            
+            with col1:
+                # زر عادي مخصص
+                if st.button(f"📁 اضغط هنا لاختيار ملف"):
+                    # لا يفعل شيء هنا، فقط لتحديث الحالة
+                    pass
+
+            with col2:
+                # الـ File Uploader مخفي تماماً عن الأنظار
+                uploaded_file = st.file_uploader("", type=None, label_visibility="collapsed", key="hidden_uploader")
+                if uploaded_file is not None:
+                    st.session_state.selected_file = uploaded_file
+                    st.success(f"✅ تم اختيار الملف: {uploaded_file.name}")
+
+            # حقول الإدخال العادية
             with st.form("send_file_form", clear_on_submit=True):
                 active_users = [u[0] for u in get_all_users() if u[7] == 'active' and u[0] != st.session_state.user and u[2] != "Guest"]
                 if not active_users:
@@ -394,23 +400,23 @@ else:
                 else:
                     recipient = st.selectbox(t['send_to'], [t['choose_user_placeholder']] + active_users)
                     msg = st.text_area(t['your_message'])
-                    uploaded_file = st.file_uploader(t['choose_file'], type=None, help="200 MB كحد أقصى.")
                     
                     if st.form_submit_button(t['send_now']):
-                        if uploaded_file and recipient and recipient != t['choose_user_placeholder']:
+                        if st.session_state.selected_file and recipient and recipient != t['choose_user_placeholder']:
                             progress_bar = st.progress(0, t['sending'])
                             user_folder = os.path.join("storage", "UserFiles", recipient)
                             os.makedirs(user_folder, exist_ok=True)
-                            file_path = os.path.join(user_folder, uploaded_file.name)
+                            file_path = os.path.join(user_folder, st.session_state.selected_file.name)
                             with open(file_path, "wb") as f:
-                                f.write(uploaded_file.getbuffer())
+                                f.write(st.session_state.selected_file.getbuffer())
                             now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
                             with get_connection() as conn:
                                 cursor = conn.cursor()
-                                cursor.execute("INSERT INTO user_files (filename, sender_username, recipient_username, message, file_path, timestamp) VALUES (?, ?, ?, ?, ?, ?)", (uploaded_file.name, st.session_state.user, recipient, msg, file_path, now_str))
+                                cursor.execute("INSERT INTO user_files (filename, sender_username, recipient_username, message, file_path, timestamp) VALUES (?, ?, ?, ?, ?, ?)", (st.session_state.selected_file.name, st.session_state.user, recipient, msg, file_path, now_str))
                                 conn.commit()
                             progress_bar.empty()
                             st.success(f"✅ {t['send_success']} {recipient}!")
+                            st.session_state.selected_file = None
                             st.rerun()
                         else:
                             st.error(t['send_error'])
