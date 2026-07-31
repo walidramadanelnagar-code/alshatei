@@ -19,6 +19,22 @@ from translations import TRANSLATIONS
 
 st.set_page_config(page_title="نظام ضبط ومشاركة الوثائق - أعمال الشاطئ", layout="wide", initial_sidebar_state="collapsed")
 
+# =============================================================
+# 🛠️ إصلاح تداخل شاشة التقارير (حل ظاهري)
+# =============================================================
+st.markdown("""
+<style>
+    /* إخفاء الرموز المشوهة التي تظهر في الـ expander */
+    .stExpander .stMarkdown p {
+        display: none !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+st.markdown("""
+<link rel="icon" type="image/x-icon" href="static/favicon.ico">
+""", unsafe_allow_html=True)
+
 st.markdown("""
 <link rel="icon" type="image/x-icon" href="static/favicon.ico">
 """, unsafe_allow_html=True)
