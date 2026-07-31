@@ -781,7 +781,7 @@ else:
                 
                 with get_connection() as conn:
                     cur = conn.cursor()
-                    cur.execute("SELECT id, title, assigned_to_username, status, file_name, uploaded_by, uploaded_at, created_at, approved_by, approved_at FROM report_items WHERE report_id = ? ORDER BY id ASC", (r_id,))
+                    cur.execute("SELECT id, title, assigned_to_username, status, file_name, uploaded_by, uploaded_at, created_at, approved_by, approved_at FROM report_items WHERE report_id = ? ORDER BY created_at ASC", (r_id,))
                     all_items = cur.fetchall()
                 
                 if all_items:
@@ -789,7 +789,7 @@ else:
                         (i_id, i_title, i_user, i_stat, i_file, i_up_by, i_up_at, i_created, i_app_by, i_app_at) = item
                         
                         # ✅ عرض البند بشكل مضغوط في 4 أعمدة
-                        cols = st.columns([4, 2, 1.5, 2.5])
+                        cols = st.columns([3, 2, 1.5, 3])
                         
                         # العمود 1: العنوان والمكلف
                         cols[0].markdown(f"**{i_title}**")
@@ -803,50 +803,88 @@ else:
                         else:
                             cols[1].success("✅ مقبول")
                         
-                        # العمود 3: أزرار الترتيب (للمسؤول أو المنشئ)
+                        # العمود 3: أزرار الترتيب والتعديل (للمسؤول أو المنشئ)
                         can_manage = is_admin or r_creator == st.session_state.user
                         if can_manage:
-                            btn_cols = cols[2].columns(3)
+                            btn_cols = cols[2].columns(4)
+                            
+                            # زر رفع للترتيب
                             if idx > 0:
                                 if btn_cols[0].button("↑", key=f"up_{r_id}_{i_id}", use_container_width=True):
                                     with get_connection() as conn:
                                         cursor = conn.cursor()
-                                        cursor.execute("SELECT id FROM report_items WHERE report_id = ? ORDER BY id ASC", (r_id,))
-                                        items_order = [row[0] for row in cursor.fetchall()]
-                                        if i_id in items_order:
-                                            pos = items_order.index(i_id)
+                                        # نستخدم created_at للترتيب بدلاً من id
+                                        cursor.execute("SELECT id, created_at FROM report_items WHERE report_id = ? ORDER BY created_at ASC", (r_id,))
+                                        items = cursor.fetchall()
+                                        if i_id in [item[0] for item in items]:
+                                            pos = [item[0] for item in items].index(i_id)
                                             if pos > 0:
-                                                cursor.execute("UPDATE report_items SET id = -id WHERE id = ?", (i_id,))
-                                                cursor.execute("UPDATE report_items SET id = -id WHERE id = ?", (items_order[pos-1],))
-                                                cursor.execute("UPDATE report_items SET id = ? WHERE id = ?", (items_order[pos-1], i_id))
-                                                cursor.execute("UPDATE report_items SET id = ? WHERE id = ?", (i_id, items_order[pos-1]))
+                                                current_date = items[pos][1]
+                                                prev_date = items[pos-1][1]
+                                                cursor.execute("UPDATE report_items SET created_at = ? WHERE id = ?", (prev_date, i_id))
+                                                cursor.execute("UPDATE report_items SET created_at = ? WHERE id = ?", (current_date, items[pos-1][0]))
                                                 conn.commit()
+                                                log_activity(st.session_state.user, "MOVE_ITEM_UP", i_title, f"Report {r_title}", f"Moved item up in report")
                                         st.rerun()
+                            
+                            # زر خفض للترتيب
                             if idx < len(all_items) - 1:
                                 if btn_cols[1].button("↓", key=f"down_{r_id}_{i_id}", use_container_width=True):
                                     with get_connection() as conn:
                                         cursor = conn.cursor()
-                                        cursor.execute("SELECT id FROM report_items WHERE report_id = ? ORDER BY id ASC", (r_id,))
-                                        items_order = [row[0] for row in cursor.fetchall()]
-                                        if i_id in items_order:
-                                            pos = items_order.index(i_id)
-                                            if pos < len(items_order) - 1:
-                                                cursor.execute("UPDATE report_items SET id = -id WHERE id = ?", (i_id,))
-                                                cursor.execute("UPDATE report_items SET id = -id WHERE id = ?", (items_order[pos+1],))
-                                                cursor.execute("UPDATE report_items SET id = ? WHERE id = ?", (items_order[pos+1], i_id))
-                                                cursor.execute("UPDATE report_items SET id = ? WHERE id = ?", (i_id, items_order[pos+1]))
+                                        cursor.execute("SELECT id, created_at FROM report_items WHERE report_id = ? ORDER BY created_at ASC", (r_id,))
+                                        items = cursor.fetchall()
+                                        if i_id in [item[0] for item in items]:
+                                            pos = [item[0] for item in items].index(i_id)
+                                            if pos < len(items) - 1:
+                                                current_date = items[pos][1]
+                                                next_date = items[pos+1][1]
+                                                cursor.execute("UPDATE report_items SET created_at = ? WHERE id = ?", (next_date, i_id))
+                                                cursor.execute("UPDATE report_items SET created_at = ? WHERE id = ?", (current_date, items[pos+1][0]))
                                                 conn.commit()
+                                                log_activity(st.session_state.user, "MOVE_ITEM_DOWN", i_title, f"Report {r_title}", f"Moved item down in report")
                                         st.rerun()
-                            if btn_cols[2].button("🗑", key=f"del_{r_id}_{i_id}", use_container_width=True):
+                            
+                            # زر تعديل البند
+                            if btn_cols[2].button("✏️", key=f"edit_{r_id}_{i_id}", use_container_width=True):
+                                st.session_state[f"edit_item_{i_id}"] = True
+                            
+                            # زر حذف البند
+                            if btn_cols[3].button("🗑", key=f"del_{r_id}_{i_id}", use_container_width=True):
                                 st.session_state[f"confirm_del_item_{i_id}"] = True
+                        
+                        # ✅ نموذج تعديل البند
+                        if st.session_state.get(f"edit_item_{i_id}", False):
+                            with st.expander(f"✏️ تعديل البند: {i_title}", expanded=True):
+                                with st.form(key=f"edit_form_{i_id}"):
+                                    new_title = st.text_input("العنوان الجديد", value=i_title)
+                                    active_users = [u[0] for u in get_all_users() if u[7] == 'active']
+                                    current_index = active_users.index(i_user) if i_user in active_users else 0
+                                    new_user = st.selectbox("المكلف الجديد", active_users, index=current_index)
+                                    col_save, col_cancel = st.columns(2)
+                                    if col_save.form_submit_button("💾 حفظ"):
+                                        with get_connection() as conn:
+                                            conn.cursor().execute("UPDATE report_items SET title = ?, assigned_to_username = ? WHERE id = ?", (new_title, new_user, i_id))
+                                            conn.commit()
+                                            log_activity(st.session_state.user, "EDIT_ITEM", i_title, f"Report {r_title}", f"Edited item: {i_title} -> {new_title}")
+                                        del st.session_state[f"edit_item_{i_id}"]
+                                        st.success("تم تعديل البند.")
+                                        st.rerun()
+                                    if col_cancel.form_submit_button("❌ إلغاء"):
+                                        del st.session_state[f"edit_item_{i_id}"]
+                                        st.rerun()
                         
                         # العمود 4: الإجراءات (تحميل - قبول - رفع)
                         action_cols = cols[3].columns(1)
                         
-                        # عرض ملف إذا موجود
-                        if i_file and os.path.exists(os.path.join("storage", "Reports", str(i_id), i_file)):
-                            with open(os.path.join("storage", "Reports", str(i_id), i_file), "rb") as f:
+                        # ✅ عرض ملف إذا موجود (بغض النظر عن الترتيب)
+                        file_path = os.path.join("storage", "Reports", str(i_id), i_file) if i_file else None
+                        if i_file and os.path.exists(file_path):
+                            with open(file_path, "rb") as f:
                                 action_cols[0].download_button("📥 تحميل", f, file_name=i_file, key=f"dl_item_{i_id}", use_container_width=True)
+                        else:
+                            if i_file:
+                                action_cols[0].caption("⚠️ الملف غير موجود")
                         
                         # قبول البند (للمسؤول أو المنشئ)
                         can_approve = is_admin or r_creator == st.session_state.user
@@ -856,6 +894,7 @@ else:
                                 with get_connection() as conn:
                                     conn.cursor().execute("UPDATE report_items SET status = 'approved', approved_by = ?, approved_at = ? WHERE id = ?", (st.session_state.user, now_str, i_id))
                                     conn.commit()
+                                    log_activity(st.session_state.user, "APPROVE_ITEM", i_title, f"Report {r_title}", f"Approved item: {i_title}")
                                 st.success("تم قبول البند.")
                                 st.rerun()
                         
@@ -873,6 +912,7 @@ else:
                                     with get_connection() as conn:
                                         conn.cursor().execute("UPDATE report_items SET status = 'uploaded', file_name = ?, file_path = ?, uploaded_by = ?, uploaded_at = ? WHERE id = ?", (uploaded_file.name, path, st.session_state.user, now_str, i_id))
                                         conn.commit()
+                                        log_activity(st.session_state.user, "UPLOAD_ITEM_FILE", uploaded_file.name, f"Report {r_title}", f"Uploaded file for item: {i_title}")
                                     st.success("تم رفع الملف.")
                                     st.rerun()
                                 else:
@@ -883,9 +923,14 @@ else:
                             st.warning(f"هل تريد حذف البند '{i_title}'؟")
                             col_y, col_n = st.columns(2)
                             if col_y.button("✅ نعم", key=f"yes_del_{i_id}"):
+                                # حذف الملفات المرتبطة
+                                folder = os.path.join("storage", "Reports", str(i_id))
+                                if os.path.exists(folder):
+                                    shutil.rmtree(folder, ignore_errors=True)
                                 with get_connection() as conn:
                                     conn.cursor().execute("DELETE FROM report_items WHERE id = ?", (i_id,))
                                     conn.commit()
+                                    log_activity(st.session_state.user, "DELETE_ITEM", i_title, f"Report {r_title}", f"Deleted item: {i_title}")
                                 del st.session_state[f"confirm_del_item_{i_id}"]
                                 st.success("تم حذف البند.")
                                 st.rerun()
@@ -905,8 +950,10 @@ else:
                         if col3.form_submit_button("➕ إضافة"):
                             if item_title.strip():
                                 with get_connection() as conn:
-                                    conn.cursor().execute("INSERT INTO report_items (report_id, title, assigned_to_username, status, created_at) VALUES (?, ?, ?, 'pending', ?)", (r_id, item_title.strip(), assign_user, datetime.now().strftime("%Y-%m-%d %H:%M")))
+                                    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                                    conn.cursor().execute("INSERT INTO report_items (report_id, title, assigned_to_username, status, created_at) VALUES (?, ?, ?, 'pending', ?)", (r_id, item_title.strip(), assign_user, now_str))
                                     conn.commit()
+                                    log_activity(st.session_state.user, "ADD_ITEM", item_title.strip(), f"Report {r_title}", f"Added item to report")
                                 st.success("تم إضافة البند.")
                                 st.rerun()
                             else:
@@ -919,6 +966,7 @@ else:
                         with get_connection() as conn:
                             conn.cursor().execute("UPDATE reports SET status = 'archived' WHERE id = ?", (r_id,))
                             conn.commit()
+                            log_activity(st.session_state.user, "ARCHIVE_REPORT", r_title, "", f"Archived report: {r_title}")
                         st.success("تم أرشفة التقرير.")
                         st.rerun()
 
@@ -944,6 +992,7 @@ else:
                                 for viewer in selected_viewers:
                                     cursor.execute("INSERT INTO report_viewers (report_id, viewer_username) VALUES (?, ?)", (report_id, viewer))
                                 conn.commit()
+                                log_activity(st.session_state.user, "CREATE_REPORT", r_title.strip(), "", f"Created new report: {r_title.strip()}")
                             st.success(f"تم إنشاء التقرير: {r_title}")
                             st.rerun()
                         else:
@@ -968,6 +1017,7 @@ else:
                             with get_connection() as conn:
                                 conn.cursor().execute("UPDATE reports SET status = 'active' WHERE id = ?", (r_id,))
                                 conn.commit()
+                                log_activity(st.session_state.user, "RESTORE_REPORT", r_title, "", f"Restored report: {r_title}")
                             st.success("تم استرجاع التقرير.")
                             st.rerun()
                         if col_a3.button("🗑️ حذف نهائي", key=f"hard_del_{r_id}", type="primary"):
@@ -976,6 +1026,7 @@ else:
                                 conn.cursor().execute("DELETE FROM report_items WHERE report_id = ?", (r_id,))
                                 conn.cursor().execute("DELETE FROM report_viewers WHERE report_id = ?", (r_id,))
                                 conn.commit()
+                                log_activity(st.session_state.user, "HARD_DELETE_REPORT", r_title, "", f"Permanently deleted report: {r_title}")
                             st.error("تم الحذف النهائي.")
                             st.rerun()
                 else:
@@ -1036,6 +1087,7 @@ else:
                                 cursor = conn.cursor()
                                 cursor.execute("UPDATE users SET status = 'deleted', deleted_by = ?, deleted_at = ? WHERE username = ?", (st.session_state.user, now_t, target_del_u))
                                 conn.commit()
+                                log_activity(st.session_state.user, "DELETE_USER", target_del_u, "", f"Deleted user: {target_del_u}")
                             del st.session_state[f"confirm_u_{target_del_u}"]
                             st.success("تم حذف المستخدم.")
                             st.rerun()
@@ -1068,6 +1120,7 @@ else:
                                 try:
                                     cursor.execute("INSERT INTO users (username, password, allowed_folders, role, created_by, created_at, updated_at, changes_log, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active')", (new_u, hash_password(new_p), ",".join(selected_allowed), selected_role, st.session_state.user, now_str, now_str, f"Created on {now_str}"))
                                     conn.commit()
+                                    log_activity(st.session_state.user, "CREATE_USER", new_u, "", f"Created user: {new_u} with role {selected_role}")
                                     st.success(t['user_saved_success'].format(name=new_u))
                                     st.rerun()
                                 except Exception:
@@ -1105,6 +1158,7 @@ else:
                                 else:
                                     cursor.execute("UPDATE users SET allowed_folders = ?, role = ?, updated_at = ? WHERE username = ?", (folders_str, selected_edit_role, now_str, target_u))
                                 conn.commit()
+                                log_activity(st.session_state.user, "EDIT_USER", target_u, "", f"Edited user: {target_u}")
                             st.success(t['user_saved_success'].format(name=target_u))
                             st.rerun()
                         else:
@@ -1148,6 +1202,7 @@ else:
                                         if new_pass:
                                             cursor.execute("UPDATE users SET password = ? WHERE username = ?", (hash_password(new_pass), new_user.strip() if new_user.strip() else "admin"))
                                         conn.commit()
+                                        log_activity(st.session_state.user, "UPDATE_ADMIN", "", "", "Updated admin settings")
                                     st.success("تم تحديث البيانات.")
                                     st.rerun()
 
@@ -1182,6 +1237,7 @@ else:
                                 cursor.execute("UPDATE sub_folders SET status = 'active' WHERE parent_folder = ?", (m_folder,))
                                 cursor.execute("UPDATE file_logs SET status = 'active' WHERE folder LIKE ?", (f"{m_folder}%",))
                                 conn.commit()
+                                log_activity(st.session_state.user, "RESTORE_FOLDER", m_folder, "", f"Restored folder: {m_folder}")
                             st.success("تم استرجاع المجلد.")
                             st.rerun()
                         if col_dm3.button("🗑️ حذف نهائي", key=f"hard_del_m_{m_folder}", type="primary"):
@@ -1190,6 +1246,7 @@ else:
                                 conn.cursor().execute("DELETE FROM sub_folders WHERE parent_folder = ?", (m_folder,))
                                 conn.cursor().execute("DELETE FROM file_logs WHERE folder LIKE ?", (f"{m_folder}%",))
                                 conn.commit()
+                                log_activity(st.session_state.user, "HARD_DELETE_FOLDER", m_folder, "", f"Permanently deleted folder: {m_folder}")
                             shutil.rmtree(os.path.join("storage", m_folder), ignore_errors=True)
                             st.error("تم الحذف النهائي.")
                             st.rerun()
@@ -1209,12 +1266,14 @@ else:
                             with get_connection() as conn:
                                 conn.cursor().execute("UPDATE file_logs SET status = 'active' WHERE id = ?", (f_id,))
                                 conn.commit()
+                                log_activity(st.session_state.user, "RESTORE_FILE", f_name, f_folder, f"Restored file: {f_name}")
                             st.success("تم استرجاع الملف.")
                             st.rerun()
                         if fc3.button("🗑️ حذف نهائي", key=f"hard_del_f_{f_id}", type="primary"):
                             with get_connection() as conn:
                                 conn.cursor().execute("DELETE FROM file_logs WHERE id = ?", (f_id,))
                                 conn.commit()
+                                log_activity(st.session_state.user, "HARD_DELETE_FILE", f_name, f_folder, f"Permanently deleted file: {f_name}")
                             st.error("تم الحذف النهائي.")
                             st.rerun()
                 else:
