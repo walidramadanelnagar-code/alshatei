@@ -30,7 +30,7 @@ if 'lang' not in st.session_state:
     st.session_state.lang = 'ar'
 
 # =============================================================
-# 🎨 التصميم النهائي (نسخة الدمج الكامل)
+# 🎨 التصميم النهائي (على الـ 500 سطر الأصلي)
 # =============================================================
 st.markdown(f"""
 <style>
@@ -50,7 +50,7 @@ st.markdown(f"""
     
     section[data-testid="stSidebar"] {{ display: none !important; }}
     
-    /* تنسيق أزرار التنقل */
+    /* تنسيق أزرار التنقل الأفقية */
     .stRadio > div {{
         display: flex !important;
         flex-wrap: wrap !important;
@@ -85,13 +85,13 @@ st.markdown(f"""
         display: none !important;
     }}
 
-    /* تنسيق الكروت */
+    /* تنسيق الكروت البيضاء */
     div[data-testid="stVerticalBlock"] > div:has(div.stTextInput),
     div[data-testid="stVerticalBlock"] > div:has(div.stTextArea),
     div[data-testid="stVerticalBlock"] > div:has(div.stSelectbox),
     div[data-testid="stVerticalBlock"] > div:has(div.stFileUploader),
     .stAlert, .stInfo, .stSuccess, .stWarning, .stError,
-    .stExpander, .stTabs {{
+    .stExpander {{
         background-color: #ffffff !important;
         padding: 16px !important;
         border-radius: 12px !important;
@@ -110,14 +110,13 @@ st.markdown(f"""
     }}
 
     .stTextInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"],
-    .stMultiSelect div[data-baseweb="select"], .stNumberInput input {{
+    .stMultiSelect div[data-baseweb="select"] {{
         background-color: #ffffff !important;
         color: #1e293b !important;
         border: 1px solid #e2e8f0 !important;
         border-radius: 8px !important;
     }}
 
-    /* الأزرار */
     .stButton button {{
         color: #ffffff !important;
         background-color: #2563eb !important;
@@ -125,7 +124,6 @@ st.markdown(f"""
         border: none !important;
         padding: 10px 24px !important;
         font-weight: 600 !important;
-        transition: 0.3s;
     }}
     .stButton button:hover {{ background-color: #1d4ed8 !important; }}
     
@@ -283,7 +281,7 @@ else:
     st.markdown("---")
 
     # ----------------------------------------------------
-    # 1. الشاشة الرئيسية
+    # 1. الشاشة الرئيسية (الملفات والمراسلات)
     # ----------------------------------------------------
     if selected_screen == main_title:
         st.title(main_title)
@@ -313,10 +311,10 @@ else:
                 st.info(t['no_inbox'])
 
         else:
+            # إرسال ملف
             st.subheader(t['send_title'])
             with st.form("send_file_form", clear_on_submit=True):
                 active_users = [u[0] for u in get_all_users() if u[7] == 'active' and u[0] != st.session_state.user and u[2] != "Guest"]
-                
                 if not active_users:
                     st.warning(t['no_active_users'])
                 else:
@@ -344,6 +342,7 @@ else:
                             st.error(t['send_error'])
             
             st.divider()
+            # الوارد
             st.subheader(t['inbox_title'])
             with get_connection() as conn:
                 cursor = conn.cursor()
@@ -372,6 +371,7 @@ else:
                 st.info(t['no_inbox'])
 
             st.divider()
+            # الصادر
             st.subheader(t['sent_title'])
             with get_connection() as conn:
                 cursor = conn.cursor()
@@ -400,7 +400,7 @@ else:
                 st.info(t['no_sent'])
 
     # ----------------------------------------------------
-    # 2. إدارة الملفات والمجلدات
+    # 2. قاعدة الملفات
     # ----------------------------------------------------
     elif selected_screen == files_screen_title:
         st.title(files_screen_title)
