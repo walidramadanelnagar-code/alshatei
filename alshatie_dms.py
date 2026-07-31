@@ -30,7 +30,7 @@ if 'lang' not in st.session_state:
     st.session_state.lang = 'ar'
 
 # =============================================================
-# 🎨 التصميم الجديد والممتد (النسخة النهائية)
+# 🎨 التصميم النهائي (نسخة "وصلنا يا هندسة")
 # =============================================================
 st.markdown(f"""
 <style>
@@ -241,7 +241,7 @@ else:
 
     if is_guest:
         main_title = "📄 الوثائق والملفات العامة"
-        files_screen_title = "📂 قاعدة المملفات"
+        files_screen_title = "📂 قاعدة الملفات"
     else:
         main_title = t['nav_main_user']
         files_screen_title = t['nav_files']
@@ -258,7 +258,7 @@ else:
     with col_logo:
         st.markdown(f"""
         <div style="margin-top: 5px;">
-            <h2 style="font-size: 24px; color: #0f172a; margin-bottom: 0;">نظام <span style="color: #2563eb;">ضبط ومشاركة الوثائق</span></h2>
+            <h2 style="font-size: 24px; color: #0f172a; margin-bottom: 0;">{t['app_title']}</h2>
         </div>
         """, unsafe_allow_html=True)
     with col_controls:
@@ -1009,8 +1009,8 @@ else:
         st.title("📊 " + t["nav_reports"])
         
         if is_admin:
-            st.markdown(f"**أرشيف التقارير**") # العنوان خارج الـ expander
-            with st.expander(""): # الـ expander فارغ من الداخل
+            st.markdown(f"**{t['restore_msg']}**") # العنوان يترجم
+            with st.expander("📂"): # سهم أنيق بدل arrow_down
                 with get_connection() as conn:
                     cursor = conn.cursor()
                     cursor.execute("SELECT id, title, created_by, created_at FROM reports WHERE status = 'archived' ORDER BY created_at DESC")
@@ -1037,8 +1037,8 @@ else:
                     st.caption("لا توجد تقارير مؤرشفة.")
 
         if is_admin or is_manager:
-            st.markdown(f"**إنشاء تقرير جديد**") # العنوان خارج الـ expander
-            with st.expander(""): # الـ expander فارغ من الداخل
+            st.markdown(f"**{t['create_report']}**") # العنوان يترجم
+            with st.expander("📂"):
                 with st.form("create_report_form", clear_on_submit=True):
                     r_title = st.text_input("عنوان التقرير")
                     r_desc = st.text_area("وصف التقرير")
@@ -1078,8 +1078,8 @@ else:
             st.info("لا توجد تقارير نشطة.")
         
         for r_id, r_title, r_desc, r_creator, r_date in reports_list:
-            st.markdown(f"**{r_title}**") # العنوان خارج الـ expander
-            with st.expander(""): # الـ expander فارغ من الداخل
+            st.markdown(f"**{r_title}**") # العنوان يظهر فوق
+            with st.expander("📂"):
                 st.caption(r_desc if r_desc else "لا يوجد وصف.")
                 with get_connection() as conn:
                     cur = conn.cursor()
@@ -1149,6 +1149,7 @@ else:
                                 st.error("اكتب عنواناً للبند.")
 
                 if is_admin or r_creator == st.session_state.user:
+                    st.markdown("---") # ✅ خط فاصل بين كل تقرير
                     if st.button(f"🏁 إنهاء وأرشفة", key=f"complete_{r_id}", type="primary"):
                         with get_connection() as conn:
                             conn.cursor().execute("UPDATE reports SET status = 'archived' WHERE id = ?", (r_id,))
