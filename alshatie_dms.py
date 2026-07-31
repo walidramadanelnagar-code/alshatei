@@ -749,7 +749,7 @@ else:
                         st.caption("لا يوجد مجلدات فرعية.")
 
     # ----------------------------------------------------
-    # 3. التقارير والرقابة (التبويبة الثالثة) - المعدل
+    # 3. التقارير والرقابة (التبويبة الثالثة) - المعدل النهائي
     # ----------------------------------------------------
     with tabs[2]:
         st.title("📊 " + t['nav_reports'])
@@ -776,7 +776,8 @@ else:
             st.info("لا توجد تقارير نشطة.")
         
         for r_id, r_title, r_desc, r_creator, r_date in reports_list:
-            with st.expander(f"📋 {r_title} (بواسطة: {r_creator} - {r_date})"):
+            st.caption(f"📋 **{r_title}** - بواسطة: {r_creator} - {r_date}") # <--- خرجنا الكلام ده بره
+            with st.expander(f"", expanded=False): # <--- الزر بقى فارغ تماماً
                 st.caption(r_desc if r_desc else "لا يوجد وصف.")
                 
                 with get_connection() as conn:
@@ -971,11 +972,12 @@ else:
                         st.rerun()
 
         # =========================================================
-        # 2️⃣ ثانياً: إنشاء تقرير جديد (مضغوط)
+        # 2️⃣ ثانياً: إنشاء تقرير جديد (مضغوط ومعدل)
         # =========================================================
         if is_admin or is_manager:
             st.markdown("---")
-            with st.expander("➕ " + t['create_report'], expanded=False):
+            st.caption("➕ إنشاء تقرير جديد") # <--- الليبل فوق
+            with st.expander(f"", expanded=False): # <--- الزر فارغ تماماً ولا يحتوي على أي كلام عربي
                 with st.form("create_report_form", clear_on_submit=True):
                     col1, col2 = st.columns(2)
                     r_title = col1.text_input("عنوان التقرير", placeholder="أدخل عنوان التقرير...")
@@ -999,12 +1001,12 @@ else:
                             st.error("يرجى كتابة عنوان.")
 
         # =========================================================
-        # 3️⃣ ثالثاً: أرشيف التقارير (في الآخر)
+        # 3️⃣ ثالثاً: أرشيف التقارير (معدل)
         # =========================================================
         if is_admin:
             st.markdown("---")
-            st.markdown(f"**{t['restore_msg']}**")
-            with st.expander("📦 أرشيف التقارير", expanded=False):
+            st.caption("📦 أرشيف التقارير") # <--- الليبل فوق
+            with st.expander(f"", expanded=False): # <--- الزر فارغ تماماً
                 with get_connection() as conn:
                     cursor = conn.cursor()
                     cursor.execute("SELECT id, title, created_by, created_at FROM reports WHERE status = 'archived' ORDER BY created_at DESC")
