@@ -106,7 +106,7 @@ st.markdown(f"""
         border-radius: 8px !important;
     }}
 
-    /* ✅ الأزرار الرئيسية (أزرق ونص أبيض) */
+    /* ✅ الأزرار (أزرق ونص أبيض) */
     .stButton button {{
         color: #ffffff !important;
         background-color: #2563eb !important;
@@ -120,55 +120,6 @@ st.markdown(f"""
     
     .stButton button[kind="secondary"],
     .stButton button:not([kind]) {{ background-color: #1e293b !important; }}
-
-    /* ✅ تنسيق الأزرار الصغيرة المربعة (موحدة الحجم) */
-    .btn-sm-square {{
-        width: 40px !important;
-        height: 40px !important;
-        padding: 0 !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        font-size: 16px !important;
-        border-radius: 8px !important;
-        border: 1px solid #e2e8f0 !important;
-        background-color: #ffffff !important;
-        color: #1e293b !important;
-        transition: all 0.2s ease !important;
-        box-shadow: none !important;
-        min-width: 40px !important;
-        min-height: 40px !important;
-    }}
-    
-    /* زر التحميل */
-    .btn-sm-square.btn-download {{
-        color: #3b5998 !important;
-        border-color: #cbd5e1 !important;
-    }}
-    .btn-sm-square.btn-download:hover {{
-        background-color: #f8fafc !important;
-        border-color: #3b5998 !important;
-    }}
-    
-    /* زر القبول (خلفية بيضاء وعلامة صح خضراء) */
-    .btn-sm-square.btn-accept {{
-        color: #22c55e !important; /* لون العلامة أخضر */
-        border-color: #22c55e !important;
-    }}
-    .btn-sm-square.btn-accept:hover {{
-        background-color: #22c55e !important;
-        color: #ffffff !important;
-    }}
-    
-    /* زر الرفض / الحذف */
-    .btn-sm-square.btn-reject {{
-        color: #ef4444 !important;
-        border-color: #ef4444 !important;
-    }}
-    .btn-sm-square.btn-reject:hover {{
-        background-color: #ef4444 !important;
-        color: #ffffff !important;
-    }}
 
     .custom-footer {{
         position: fixed;
@@ -396,20 +347,10 @@ else:
                     if msg: col2.caption(f"📝 {msg}")
                     if os.path.exists(f_path):
                         with open(f_path, "rb") as f:
-                            col3.markdown(
-                                f"""
-                                <button class="btn-sm-square btn-download" onclick="document.getElementById('dl_inbox_{msg_id}').click()">
-                                    <i class="fas fa-download"></i>
-                                </button>
-                                <div style="display:none;">{st.download_button("⬇️", f, file_name=f_name, key=f"dl_inbox_{msg_id}")}</div>
-                                """, unsafe_allow_html=True
-                            )
+                            col3.download_button("⬇️ تحميل", f, file_name=f_name, key=f"dl_inbox_{msg_id}")
                     else:
                         col3.caption(t['file_not_found'])
-                    
-                    # زر الحذف المربع الصغير
-                    col_del = col3
-                    if col_del.button("🗑️", key=f"del_msg_{msg_id}", use_container_width=True):
+                    if st.button(t['delete_btn'], key=f"del_msg_{msg_id}"):
                         with get_connection() as conn:
                             conn.cursor().execute("UPDATE user_files SET deleted_by_recipient = 1 WHERE id = ?", (msg_id,))
                             conn.commit()
@@ -433,20 +374,10 @@ else:
                     if msg: col2.caption(f"📝 {msg}")
                     if os.path.exists(f_path):
                         with open(f_path, "rb") as f:
-                            col3.markdown(
-                                f"""
-                                <button class="btn-sm-square btn-download" onclick="document.getElementById('dl_sent_{msg_id}').click()">
-                                    <i class="fas fa-download"></i>
-                                </button>
-                                <div style="display:none;">{st.download_button("⬇️", f, file_name=f_name, key=f"dl_sent_{msg_id}")}</div>
-                                """, unsafe_allow_html=True
-                            )
+                            col3.download_button("⬇️ تحميل", f, file_name=f_name, key=f"dl_sent_{msg_id}")
                     else:
                         col3.caption(t['file_not_found'])
-                    
-                    # زر الحذف المربع الصغير
-                    col_del = col3
-                    if col_del.button("🗑️", key=f"del_sent_{msg_id}", use_container_width=True):
+                    if st.button(t['delete_btn'], key=f"del_sent_{msg_id}"):
                         with get_connection() as conn:
                             conn.cursor().execute("UPDATE user_files SET deleted_by_sender = 1 WHERE id = ?", (msg_id,))
                             conn.commit()
@@ -545,14 +476,7 @@ else:
                 f_path = os.path.join("storage", current_folder_path, f_name)
                 if os.path.exists(f_path):
                     with open(f_path, "rb") as f:
-                        c3.markdown(
-                            f"""
-                            <button class="btn-sm-square btn-download" onclick="document.getElementById('dl_ex_{row_id}').click()">
-                                <i class="fas fa-download"></i>
-                            </button>
-                            <div style="display:none;">{st.download_button("⬇️", f, file_name=f_name, key=f"dl_ex_{row_id}")}</div>
-                            """, unsafe_allow_html=True
-                        )
+                        c3.download_button("⬇️ تحميل", f, file_name=f_name, key=f"dl_ex_{row_id}", use_container_width=True)
                 
                 can_delete_file = (not is_guest) and (st.session_state.nav_path[0] in st.session_state.allowed or is_admin)
                 if can_delete_file:
@@ -953,23 +877,16 @@ else:
                         # العمود 4: الإجراءات (تحميل - قبول - رفع)
                         action_cols = cols[3].columns(1)
                         
-                        # ✅ عرض ملف إذا موجود (بغض النظر عن الترتيب) & زر التحميل المربع الصغير
+                        # ✅ عرض ملف إذا موجود (بغض النظر عن الترتيب)
                         file_path = os.path.join("storage", "Reports", str(i_id), i_file) if i_file else None
                         if i_file and os.path.exists(file_path):
                             with open(file_path, "rb") as f:
-                                action_cols[0].markdown(
-                                    f"""
-                                    <button class="btn-sm-square btn-download" onclick="document.getElementById('dl_item_{i_id}').click()">
-                                        <i class="fas fa-download"></i>
-                                    </button>
-                                    <div style="display:none;">{st.download_button("📥", f, file_name=i_file, key=f"dl_item_{i_id}")}</div>
-                                    """, unsafe_allow_html=True
-                                )
+                                action_cols[0].download_button("📥 تحميل", f, file_name=i_file, key=f"dl_item_{i_id}", use_container_width=True)
                         else:
                             if i_file:
                                 action_cols[0].caption("⚠️ الملف غير موجود")
                         
-                        # قبول البند (للمسؤول أو المنشئ) - زر مربع أبيض بعلامة صح خضراء
+                        # قبول البند (للمسؤول أو المنشئ)
                         can_approve = is_admin or r_creator == st.session_state.user
                         if i_stat == "uploaded" and can_approve:
                             if action_cols[0].button("✅ قبول", key=f"app_{i_id}", use_container_width=True):
