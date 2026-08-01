@@ -194,7 +194,6 @@ if guest_login:
         st.session_state.user = row[0]
         st.session_state.allowed = row[1].split(",") if row[1] else []
         st.session_state.role = row[2] if row[2] else "guest"
-        # ✅ تصفير المسار عند دخول الضيف
         st.session_state.nav_path = []
         log_activity(guest_login, "LOGIN_AUTO", "", "System", "Auto-logged in via link")
 
@@ -223,7 +222,6 @@ if not st.session_state.logged_in:
             st.session_state.user = username_input
             st.session_state.allowed = user_data["allowed_folders"]
             st.session_state.role = user_data["role"]
-            # ✅ تصفير المسار عند الدخول
             st.session_state.nav_path = []
             log_activity(username_input, "LOGIN", "", "System", "Logged into system")
             st.rerun()
