@@ -346,16 +346,19 @@ def sync_single_user_permissions(username, new_folders_list):
     conn = get_connection()
     cursor = conn.cursor()
     
-    # 1. تحديث جدول users
-    folders_str = ",".join(new_folders_list)
+    # 1. تنظيف القائمة من أي قيم فارغة أو مسافات زائدة
+    clean_folders = [f.strip() for f in new_folders_list if f and f.strip()]
+    
+    # 2. تحديث جدول users
+    folders_str = ",".join(clean_folders)
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
     cursor.execute("UPDATE users SET allowed_folders = ?, updated_at = ? WHERE username = ?", (folders_str, now_str, username))
     
-    # 2. حذف كل صلاحياته القديمة من جدول folder_permissions
+    # 3. حذف كل صلاحياته القديمة من جدول folder_permissions
     cursor.execute("DELETE FROM folder_permissions WHERE username = ?", (username,))
     
-    # 3. إضافة الصلاحيات الجديدة
-    for folder_path in new_folders_list:
+    # 4. إضافة الصلاحيات الجديدة
+    for folder_path in clean_folders:
         if folder_path.strip():
             cursor.execute("INSERT OR IGNORE INTO folder_permissions (folder_path, username) VALUES (?, ?)", (folder_path.strip(), username))
     
