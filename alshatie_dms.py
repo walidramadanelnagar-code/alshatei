@@ -648,7 +648,16 @@ else:
             
             if current_display_folder != "ROOT":
                 current_parent = st.session_state.nav_path[0]
-                can_upload_here = (current_parent in st.session_state.allowed or is_admin)
+                
+                # ✅ تم التعديل هنا: استخدام النظام الجديد للصلاحيات بدلاً من allowed القديم
+                if is_admin:
+                    can_upload_here = True
+                elif is_guest:
+                    can_upload_here = False
+                else:
+                    # التحقق إذا كان المستخدم يمتلك صلاحية لهذا المجلد في folder_permissions
+                    user_folders = get_user_viewable_folders(st.session_state.user, False)
+                    can_upload_here = current_parent in user_folders
 
                 if can_upload_here:
                     st.caption(f"📂 سيتم رفع الملف في المسار الحالي: **{current_display_folder_tag}**")
