@@ -190,31 +190,11 @@ def init_db():
                     cursor.execute("INSERT OR IGNORE INTO folder_permissions (folder_path, username) VALUES (?, ?)", (d, u_row[0]))
                 except:
                     pass
-    
-    # ============================================================
-    # ✅ إصلاح الصلاحيات الفارغة (مجرد تشغيلها مرة واحدة)
-    # ============================================================
-    try:
-        # مسح أي صلاحيات قديمة فاسدة
-        cursor.execute("DELETE FROM folder_permissions")
-        
-        # جلب المستخدمين
-        cursor.execute("SELECT username FROM users WHERE status = 'active' AND role != 'guest'")
-        users_rows = cursor.fetchall()
-        
-        # جلب المجلدات
-        cursor.execute("SELECT folder_name FROM custom_folders WHERE status = 'active'")
-        folders_rows = cursor.fetchall()
-        
-        # إعادة منح الصلاحيات للجميع (حتى لو كانت فارغة من قبل)
-        for u_row in users_rows:
-            for f_row in folders_rows:
-                cursor.execute("INSERT OR IGNORE INTO folder_permissions (folder_path, username) VALUES (?, ?)", (f_row[0], u_row[0]))
-        
-        print("✅ تم إعادة تعبئة الصلاحيات بنجاح!")
-    except Exception as e:
-        print(f"⚠️ خطأ أثناء إعادة التعبئة: {e}")
 
+    # ============================================================
+    # 🚨 تم إزالة الكود اللي كان بيخلي كل المستخدمين يشوفوا كل المجلدات
+    # ============================================================
+    
     conn.commit()
     conn.close()
     
@@ -340,28 +320,3 @@ def get_guest_folder(username):
     row = cursor.fetchone()
     conn.close()
     return row[0] if row else None
-
-def sync_single_user_permissions(username, new_folders_list):
-    """تقوم بتحديث جدول users و folder_permissions لمستخدم واحد لتجنب التناقض"""
-    conn = get_connection()
-    cursor = conn.cursor()
-    
-    # 1. تنظيف القائمة من أي قيم فارغة أو مسافات زائدة
-    clean_folders = [f.strip() for f in new_folders_list if f and f.strip()]
-    
-    # 2. تحديث جدول users
-    folders_str = ",".join(clean_folders)
-    now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
-    cursor.execute("UPDATE users SET allowed_folders = ?, updated_at = ? WHERE username = ?", (folders_str, now_str, username))
-    
-    # 3. حذف كل صلاحياته القديمة من جدول folder_permissions
-    cursor.execute("DELETE FROM folder_permissions WHERE username = ?", (username,))
-    
-    # 4. إضافة الصلاحيات الجديدة
-    for folder_path in clean_folders:
-        if folder_path.strip():
-            cursor.execute("INSERT OR IGNORE INTO folder_permissions (folder_path, username) VALUES (?, ?)", (folder_path.strip(), username))
-    
-    conn.commit()
-    conn.close()
-    return True
