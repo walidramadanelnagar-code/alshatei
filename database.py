@@ -183,18 +183,35 @@ def init_db():
         for d in ['Accounting', 'Quality', 'Stores', 'Training', 'Main']:
             cursor.execute("INSERT OR IGNORE INTO custom_folders (folder_name, status) VALUES (?, 'active')", (d,))
             
-            # ✅ منح صلاحيات افتراضية للأدمن والمستخدمين الحاليين على المجلدات القديمة
-            cursor.execute("SELECT username FROM users WHERE status = 'active' AND role != 'guest'")
-            for u_row in cursor.fetchall():
-                try:
-                    cursor.execute("INSERT OR IGNORE INTO folder_permissions (folder_path, username) VALUES (?, ?)", (d, u_row[0]))
-                except:
-                    pass
-
     # ============================================================
-    # 🚨 تم إزالة الكود اللي كان بيخلي كل المستخدمين يشوفوا كل المجلدات
+    # ✅ الخطوة الحاسمة: إجبار النظام على نقل الصلاحيات من جدول users إلى folder_permissions
     # ============================================================
     
+    # 1. جلب كل المستخدمين النشطين من جدول users (مثل ما يظهر في لوحة التحكم بتاعتك)
+    cursor.execute("SELECT username, allowed_folders FROM users WHERE status = 'active' AND role != 'guest'")
+    users_with_perms = cursor.fetchall()
+    
+    # 2. تنظيف جدول الصلاحيات الجديد من أي أخطاء سابقة
+    cursor.execute("DELETE FROM folder_permissions")
+    
+    # 3. إعادة تعبئة جدول folder_permissions بناءً على بيانات جدول users الحقيقية
+    for username, folder_str in users_with_perms:
+        if folder_str and folder_str.strip():
+            folders = [f.strip() for f in folder_str.split(",") if f.strip()]
+            for f in folders:
+                # التأكد أن المجلد ده موجود فعلاً
+                cursor.execute("SELECT 1 FROM custom_folders WHERE folder_name = ?", (f,))
+                if cursor.fetchone():
+                    cursor.execute("INSERT OR IGNORE INTO folder_permissions (folder_path, username) VALUES (?, ?)", (f, username))
+    
+    # ============================================================
+    # ✅ إضافة البيانات التجريبية للضيوف (كمرحلة أولى)
+    # ============================================================
+    try:
+        cursor.execute("INSERT OR IGNORE INTO guest_folders (username, guest_folder) VALUES (?, ?)", ("gaca", "طلبات جاكا العامة"))
+    except:
+        pass
+
     conn.commit()
     conn.close()
     
@@ -320,3 +337,28 @@ def get_guest_folder(username):
     row = cursor.fetchone()
     conn.close()
     return row[0] if row else None
+
+# ✅ دالة جديدة لإنشاء مستخدم جديد مع صلاحياته بشكل متزامن
+def create_new_user_with_permissions(username, password, allowed_folders_list, role, created_by, guest_folder=None):
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # 1. إدخال المستخدم في جدول users
+    cursor.execute("""
+        INSERT INTO users (username, password, allowed_folders, role, created_by, created_at, updated_at, changes_log, status) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active')
+    """, (username, hash_password(password), ",".join(allowed_folders_list), role, created_by, now_str, now_str, f"Created on {now_str}"))
+    
+    # 2. إدخال صلاحياته في جدول folder_permissions
+    for folder_path in allowed_folders_list:
+        if folder_path.strip():
+            cursor.execute("INSERT OR IGNORE INTO folder_permissions (folder_path, username) VALUES (?, ?)", (folder_path.strip(), username))
+    
+    # 3. إذا كان ضيف، نحدد له مجلده الخاص
+    if role == "Guest" and guest_folder:
+        cursor.execute("INSERT OR IGNORE INTO guest_folders (username, guest_folder) VALUES (?, ?)", (username, guest_folder))
+    
+    conn.commit()
+    conn.close()
+    return True
