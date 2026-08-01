@@ -15,8 +15,8 @@ from database import (
     get_all_users, get_all_folders, get_subfolders, 
     get_connection, hash_password,
     get_folder_permissions, update_folder_permissions,
-    get_user_viewable_folders, get_guest_folder,
-    sync_single_user_permissions
+    get_user_viewable_folders, get_guest_folder
+    # تم إزالة sync_single_user_permissions من هنا
 )
 from translations import TRANSLATIONS
 
@@ -1272,8 +1272,8 @@ else:
                                 else:
                                     cursor.execute("UPDATE users SET allowed_folders = ?, role = ?, updated_at = ? WHERE username = ?", (folders_str, selected_edit_role, now_str, target_u))
                                 
-                                # ✅ تحديث صلاحياته في جدول folder_permissions فوراً
-                                sync_single_user_permissions(target_u, selected_edit_allowed)
+                                # ✅ تم إزالة دالة التزامن بسبب تكرار الأخطاء
+                                # sync_single_user_permissions(target_u, selected_edit_allowed)
                                 
                                 # تحديث مجلد الضيف إذا تغير
                                 if selected_edit_role == "Guest" and guest_edit_folder:
