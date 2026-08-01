@@ -191,6 +191,30 @@ def init_db():
                 except:
                     pass
     
+    # ============================================================
+    # ✅ إصلاح الصلاحيات الفارغة (مجرد تشغيلها مرة واحدة)
+    # ============================================================
+    try:
+        # مسح أي صلاحيات قديمة فاسدة
+        cursor.execute("DELETE FROM folder_permissions")
+        
+        # جلب المستخدمين
+        cursor.execute("SELECT username FROM users WHERE status = 'active' AND role != 'guest'")
+        users_rows = cursor.fetchall()
+        
+        # جلب المجلدات
+        cursor.execute("SELECT folder_name FROM custom_folders WHERE status = 'active'")
+        folders_rows = cursor.fetchall()
+        
+        # إعادة منح الصلاحيات للجميع (حتى لو كانت فارغة من قبل)
+        for u_row in users_rows:
+            for f_row in folders_rows:
+                cursor.execute("INSERT OR IGNORE INTO folder_permissions (folder_path, username) VALUES (?, ?)", (f_row[0], u_row[0]))
+        
+        print("✅ تم إعادة تعبئة الصلاحيات بنجاح!")
+    except Exception as e:
+        print(f"⚠️ خطأ أثناء إعادة التعبئة: {e}")
+
     conn.commit()
     conn.close()
     
@@ -317,27 +341,6 @@ def get_guest_folder(username):
     conn.close()
     return row[0] if row else None
 
-def sync_legacy_permissions():
-    """هذه الدالة تنقل صلاحيات المستخدمين من allowed_folders في جدول users إلى جدول folder_permissions"""
-    conn = get_connection()
-    cursor = conn.cursor()
-    # جلب كل المستخدمين النشطين غير الضيوف
-    cursor.execute("SELECT username, allowed_folders, role FROM users WHERE status = 'active' AND role != 'guest'")
-    users = cursor.fetchall()
-    
-    for username, allowed_folders_str, role in users:
-        if allowed_folders_str and allowed_folders_str.strip():
-            folders = [f.strip() for f in allowed_folders_str.split(",") if f.strip()]
-            for folder_path in folders:
-                # التأكد أن المجلد موجود فعلًا في جدول المجلدات
-                cursor.execute("SELECT 1 FROM custom_folders WHERE folder_name = ? AND status = 'active'", (folder_path,))
-                if cursor.fetchone():
-                    cursor.execute("INSERT OR IGNORE INTO folder_permissions (folder_path, username) VALUES (?, ?)", (folder_path, username))
-    conn.commit()
-    conn.close()
-    return True
-
-# 🆕 دالة جديدة: تحديث صلاحيات مستخدم محدد في الجدولين (system + permissions)
 def sync_single_user_permissions(username, new_folders_list):
     """تقوم بتحديث جدول users و folder_permissions لمستخدم واحد لتجنب التناقض"""
     conn = get_connection()

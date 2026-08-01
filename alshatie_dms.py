@@ -16,7 +16,7 @@ from database import (
     get_connection, hash_password,
     get_folder_permissions, update_folder_permissions,
     get_user_viewable_folders, get_guest_folder,
-    sync_single_user_permissions # ✅ الدالة الجديدة للتزامن الفوري
+    sync_single_user_permissions
 )
 from translations import TRANSLATIONS
 
@@ -235,8 +235,6 @@ else:
     is_guest = (st.session_state.role == "guest")
     is_admin = (st.session_state.role == "Admin" or st.session_state.user == "admin")
     is_manager = (st.session_state.role == "Manager")
-
-    # 🚨 تم إزالة زر تزامن الصلاحيات نهائياً من هنا
 
     if is_guest:
         main_title = "📄 " + t['nav_files_guest']
