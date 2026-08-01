@@ -16,7 +16,7 @@ from database import (
     get_connection, hash_password,
     get_folder_permissions, update_folder_permissions,
     get_user_viewable_folders, get_guest_folder,
-    sync_legacy_permissions  # ✅ استدعاء دالة التزامن الجديدة
+    sync_single_user_permissions # ✅ الدالة الجديدة للتزامن الفوري
 )
 from translations import TRANSLATIONS
 
@@ -236,17 +236,7 @@ else:
     is_admin = (st.session_state.role == "Admin" or st.session_state.user == "admin")
     is_manager = (st.session_state.role == "Manager")
 
-    # ============================================================
-    # ✅ زر تزامن صلاحيات المستخدمين القدامى (مرة واحدة)
-    # ============================================================
-    if is_admin:
-        if st.button("🔄 تزامن الصلاحيات القديمة مع النظام الجديد (للمستخدمين السابقين)"):
-            if sync_legacy_permissions():
-                st.success("✅ تم نقل صلاحيات جميع المستخدمين من النظام القديم إلى النظام الجديد بنجاح!")
-                st.rerun()
-            else:
-                st.error("حدث خطأ أثناء التزامن.")
-        st.divider()
+    # 🚨 تم إزالة زر تزامن الصلاحيات نهائياً من هنا
 
     if is_guest:
         main_title = "📄 " + t['nav_files_guest']
@@ -541,7 +531,6 @@ else:
         # ✅ الجزء المخصص للملفات والتعميمات العامة (الضيف مشوفوش)
         if current_display_folder == "ROOT":
             if not is_guest:
-                # ✅ تم تغيير الاسم هنا إلى "الملفات والتعميمات العامة" بناءً على طلبك
                 st.subheader("📂 " + t['public_files_title'])
                 
                 # جلب المجلدات المسموح ليها بناءً على جدول الصلاحيات الجديد
@@ -1284,6 +1273,9 @@ else:
                                     cursor.execute("UPDATE users SET password = ?, allowed_folders = ?, role = ?, updated_at = ? WHERE username = ?", (hash_password(edit_p.strip()), folders_str, selected_edit_role, now_str, target_u))
                                 else:
                                     cursor.execute("UPDATE users SET allowed_folders = ?, role = ?, updated_at = ? WHERE username = ?", (folders_str, selected_edit_role, now_str, target_u))
+                                
+                                # ✅ تحديث صلاحياته في جدول folder_permissions فوراً
+                                sync_single_user_permissions(target_u, selected_edit_allowed)
                                 
                                 # تحديث مجلد الضيف إذا تغير
                                 if selected_edit_role == "Guest" and guest_edit_folder:

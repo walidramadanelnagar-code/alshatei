@@ -317,7 +317,6 @@ def get_guest_folder(username):
     conn.close()
     return row[0] if row else None
 
-# 🆕 دالة تزامن صلاحيات المستخدمين القديمة مع الجدول الجديد
 def sync_legacy_permissions():
     """هذه الدالة تنقل صلاحيات المستخدمين من allowed_folders في جدول users إلى جدول folder_permissions"""
     conn = get_connection()
@@ -334,6 +333,29 @@ def sync_legacy_permissions():
                 cursor.execute("SELECT 1 FROM custom_folders WHERE folder_name = ? AND status = 'active'", (folder_path,))
                 if cursor.fetchone():
                     cursor.execute("INSERT OR IGNORE INTO folder_permissions (folder_path, username) VALUES (?, ?)", (folder_path, username))
+    conn.commit()
+    conn.close()
+    return True
+
+# 🆕 دالة جديدة: تحديث صلاحيات مستخدم محدد في الجدولين (system + permissions)
+def sync_single_user_permissions(username, new_folders_list):
+    """تقوم بتحديث جدول users و folder_permissions لمستخدم واحد لتجنب التناقض"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # 1. تحديث جدول users
+    folders_str = ",".join(new_folders_list)
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+    cursor.execute("UPDATE users SET allowed_folders = ?, updated_at = ? WHERE username = ?", (folders_str, now_str, username))
+    
+    # 2. حذف كل صلاحياته القديمة من جدول folder_permissions
+    cursor.execute("DELETE FROM folder_permissions WHERE username = ?", (username,))
+    
+    # 3. إضافة الصلاحيات الجديدة
+    for folder_path in new_folders_list:
+        if folder_path.strip():
+            cursor.execute("INSERT OR IGNORE INTO folder_permissions (folder_path, username) VALUES (?, ?)", (folder_path.strip(), username))
+    
     conn.commit()
     conn.close()
     return True
