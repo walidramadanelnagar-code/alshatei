@@ -13,7 +13,9 @@ import streamlit as st
 from database import (
     init_db, log_activity, verify_user, 
     get_all_users, get_all_folders, get_subfolders, 
-    get_connection, hash_password
+    get_connection, hash_password,
+    get_folder_permissions, update_folder_permissions,
+    get_user_viewable_folders, get_guest_folder
 )
 from translations import TRANSLATIONS
 
@@ -142,7 +144,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =============================================================
-# قاعدة البيانات
+# قاعدة البيانات وتحديث الجداول
 # =============================================================
 def update_db_schema():
     try:
@@ -162,14 +164,18 @@ def update_db_schema():
     except:
         pass
 
-update_db_schema()
 init_db()
+update_db_schema()
 
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.user = None
     st.session_state.allowed = []
     st.session_state.role = "User"
+
+# ✅ تصفير المسار عند أي دخول جديد
+if "nav_path" not in st.session_state:
+    st.session_state.nav_path = []
 
 # =============================================================
 # st.query_params
@@ -188,6 +194,8 @@ if guest_login:
         st.session_state.user = row[0]
         st.session_state.allowed = row[1].split(",") if row[1] else []
         st.session_state.role = row[2] if row[2] else "guest"
+        # ✅ تصفير المسار عند دخول الضيف
+        st.session_state.nav_path = []
         log_activity(guest_login, "LOGIN_AUTO", "", "System", "Auto-logged in via link")
 
 if not st.session_state.logged_in:
@@ -215,6 +223,8 @@ if not st.session_state.logged_in:
             st.session_state.user = username_input
             st.session_state.allowed = user_data["allowed_folders"]
             st.session_state.role = user_data["role"]
+            # ✅ تصفير المسار عند الدخول
+            st.session_state.nav_path = []
             log_activity(username_input, "LOGIN", "", "System", "Logged into system")
             st.rerun()
         else:
@@ -260,7 +270,7 @@ else:
                 st.session_state.lang = 'en'
                 st.rerun()
         with col_btn:
-            # ✅ رجعت رسالة الترحيب هنا
+            # ✅ رسالة الترحيب
             st.markdown(f"""
             <div style="display: flex; align-items: center; justify-content: flex-end; gap: 15px; margin-top: 5px;">
                 <span style="font-size: 16px; font-weight: 600; color: #0f172a;">👋 مرحباً، {st.session_state.user}</span>
@@ -272,6 +282,7 @@ else:
                 st.session_state.user = None
                 st.session_state.allowed = []
                 st.session_state.role = "User"
+                st.session_state.nav_path = []
                 st.rerun()
 
     # ✅ التبويبات المضمونة
@@ -284,7 +295,7 @@ else:
         st.title(main_title)
         
         if is_guest:
-            # الضيف يشوف بس الملفات اللي اتبعتتله (الوارد فقط)
+            # الضيف يشوف بس الملفات اللي اتبعتتله (الوارد فقط) في التبويبة الأولى
             with get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute("""
@@ -516,55 +527,70 @@ else:
                             del st.session_state[f"confirm_ex_{row_id}"]
                             st.rerun()
 
-        # ✅ تعديل رئيسي: لما يكون في ROOT (الرئيسية) و المستخدم ضيف أو عنده صلاحيات
+        # ✅ الجزء المخصص للملفات والتعميمات العامة (الضيف مشوفوش)
         if current_display_folder == "ROOT":
-            st.subheader("📁 عرض الملفات المسموح بها")
-            allowed_folders = get_all_folders() if is_admin else st.session_state.allowed
-            
-            # فلترة المجلدات حسب البحث
-            if selected_main_folder_filter != "الكل":
-                if selected_main_folder_filter in allowed_folders:
-                    allowed_folders = [selected_main_folder_filter]
+            if not is_guest:
+                # ✅ تم تغيير الاسم هنا إلى "الملفات والتعميمات العامة" بناءً على طلبك
+                st.subheader("📂 " + t['public_files_title'])
+                
+                # جلب المجلدات المسموح ليها بناءً على جدول الصلاحيات الجديد
+                allowed_folders = get_user_viewable_folders(st.session_state.user, is_admin)
+                
+                if allowed_folders:
+                    # فلترة المجلدات حسب البحث
+                    if selected_main_folder_filter != "الكل" and selected_main_folder_filter in allowed_folders:
+                        allowed_folders = [selected_main_folder_filter]
+
+                    all_allowed_files = []
+                    
+                    # جلب كل الملفات من كل المجلدات المسموح بها
+                    placeholders = ','.join(['?'] * len(allowed_folders))
+                    query = f"""
+                        SELECT id, filename, uploaded_by, timestamp, folder 
+                        FROM file_logs 
+                        WHERE status = 'active' 
+                        AND folder IN ({placeholders})
+                    """
+                    with get_connection() as conn:
+                        cursor = conn.cursor()
+                        cursor.execute(query, allowed_folders)
+                        rows = cursor.fetchall()
+                        for r in rows:
+                            check_path = os.path.join("storage", r[4], r[1])
+                            if os.path.exists(check_path):
+                                all_allowed_files.append(r)
+                    
+                    # فلترة الملفات (بحث، مستخدم، امتداد)
+                    def check_file_filter(f_name, uploader):
+                        if search_keyword and search_keyword not in f_name.lower(): return False
+                        if selected_user_filter != "الكل" and selected_user_filter != uploader: return False
+                        if file_extension_filter != "الكل" and not f_name.lower().endswith(f".{file_extension_filter.lower()}"): return False
+                        return True
+
+                    filtered_flat_files = [f for f in all_allowed_files if check_file_filter(f[1], f[2])]
+
+                    # عرض الملفات
+                    can_delete_root = is_admin
+                    render_explorer_files([(f[0], f[1], f[2], f[3]) for f in filtered_flat_files], "", can_delete_root)
                 else:
-                    allowed_folders = []
+                    st.info("لا توجد مجلدات متاحة لك حالياً.")
 
-            all_allowed_files = []
+                st.markdown("---")
             
-            # 1. جلب كل الملفات من كل المجلدات المسموح بها مرة واحدة
-            if allowed_folders:
-                placeholders = ','.join(['?'] * len(allowed_folders))
-                query = f"""
-                    SELECT id, filename, uploaded_by, timestamp, folder 
-                    FROM file_logs 
-                    WHERE status = 'active' 
-                    AND folder IN ({placeholders})
-                """
-                with get_connection() as conn:
-                    cursor = conn.cursor()
-                    cursor.execute(query, allowed_folders)
-                    rows = cursor.fetchall()
-                    for r in rows:
-                        # نتأكد إن الملف فعلاً موجود على الهارد ديسك
-                        check_path = os.path.join("storage", r[4], r[1])
-                        if os.path.exists(check_path):
-                            all_allowed_files.append(r)
-            
-            # 2. فلترة الملفات (بحث، مستخدم، امتداد)
-            def check_file_filter(f_name, uploader):
-                if search_keyword and search_keyword not in f_name.lower(): return False
-                if selected_user_filter != "الكل" and selected_user_filter != uploader: return False
-                if file_extension_filter != "الكل" and not f_name.lower().endswith(f".{file_extension_filter.lower()}"): return False
-                return True
-
-            filtered_flat_files = [f for f in all_allowed_files if check_file_filter(f[1], f[2])]
-
-            # 3. عرض الملفات (الضيف ممنوع من الحذف)
-            can_delete_root = (not is_guest) and is_admin
-            render_explorer_files([(f[0], f[1], f[2], f[3]) for f in filtered_flat_files], "", can_delete_root)
-            
-            # 4. عرض أزرار المجلدات للدخول ليها (للمستخدمين العاديين والضيف)
-            st.markdown("---")
+            # عرض أزرار المجلدات للدخول ليها (للمستخدمين العاديين والضيف)
             st.subheader("📁 المجلدات الرئيسية")
+            if is_admin:
+                allowed_folders = get_all_folders()
+            elif is_guest:
+                # الضيف بيشوف بس المجلد الخاص بيه
+                guest_folder = get_guest_folder(st.session_state.user)
+                allowed_folders = [guest_folder] if guest_folder else []
+            else:
+                allowed_folders = get_user_viewable_folders(st.session_state.user, is_admin)
+            
+            if selected_main_folder_filter != "الكل" and selected_main_folder_filter in allowed_folders:
+                allowed_folders = [selected_main_folder_filter]
+
             for folder in allowed_folders:
                 if st.button(f"📂 {folder}", key=f"btn_enter_{folder}", use_container_width=True):
                     go_to_folder(folder, None)
@@ -626,6 +652,7 @@ else:
 
                 if can_upload_here:
                     st.caption(f"📂 سيتم رفع الملف في المسار الحالي: **{current_display_folder_tag}**")
+                    
                     uploaded_file = st.file_uploader(t['choose_file'], key="upload_main_file")
                     
                     if st.button(t['upload_file_btn']):
@@ -686,6 +713,7 @@ else:
                 st.markdown("📁 " + t['create_folder'])
                 with st.form("create_main_folder_form", clear_on_submit=True):
                     new_m = st.text_input("اسم المجلد الرئيسي الجديد").strip()
+                    
                     if st.form_submit_button("إنشاء"):
                         if new_m:
                             with get_connection() as conn:
@@ -694,11 +722,14 @@ else:
                                     cursor.execute("INSERT INTO custom_folders (folder_name, status) VALUES (?, 'active')", (new_m,))
                                     conn.commit()
                                     os.makedirs(os.path.join("storage", new_m), exist_ok=True)
+                                    
                                     log_activity(st.session_state.user, "CREATE_FOLDER", "", new_m, "Created main folder")
-                                    st.success(f"تم إنشاء المجلد: {new_m}")
+                                    st.success(f"تم إنشاء المجلد: {new_m}.")
                                     st.rerun()
-                                except Exception:
-                                    st.error("المجلد موجود مسبقاً!")
+                                except Exception as e:
+                                    st.error(f"المجلد موجود مسبقاً! {str(e)}")
+                        else:
+                            st.error("يرجى كتابة اسم المجلد.")
 
             with col_f2:
                 st.markdown("➕ " + t['create_sub'])
@@ -719,9 +750,12 @@ else:
                                     st.rerun()
                                 except Exception:
                                     st.error("المجلد الفرعي موجود مسبقاً!")
+                        else:
+                            st.error("يرجى تعبئة الحقول.")
 
             st.markdown("⚙️ " + t['manage_folders'])
-            m_tab1, m_tab2 = st.tabs(["✏️ " + t['rename_tab'], "🗑️ " + t['delete_tab']])
+            # ✅ تقسيم التبويبات: تعديل الاسم، تعديل الصلاحيات، وحذف المجلد
+            m_tab1, m_tab2, m_tab3 = st.tabs(["✏️ " + t['rename_tab'], "👥 تعديل الصلاحيات", "🗑️ " + t['delete_tab']])
             
             with m_tab1:
                 m_type = st.radio("نوع المجلد", ["رئيسي", "فرعي"], horizontal=True, key="ren_type")
@@ -770,6 +804,31 @@ else:
                         st.caption("لا يوجد مجلدات فرعية.")
 
             with m_tab2:
+                st.subheader("👥 تعديل صلاحيات المجلدات")
+                target_perm_folder = st.selectbox("اختر المجلد الرئيسي لتعديل صلاحياته:", get_all_folders(), key="perm_sel")
+                
+                if target_perm_folder:
+                    all_active_users_for_perm = [u[0] for u in get_all_users() if u[7] == 'active' and u[0] != st.session_state.user and u[2] != "Guest"]
+                    
+                    # جلب الصلاحيات الحالية بناءً على قاعدة البيانات
+                    current_permissions = get_folder_permissions(target_perm_folder)
+                    
+                    # التأكد أن القيم الافتراضية متطابقة مع القائمة
+                    safe_defaults = [u for u in current_permissions if u in all_active_users_for_perm]
+                    
+                    new_selected_users = st.multiselect(
+                        "المستخدمين المسموح لهم برؤية هذا المجلد:", 
+                        all_active_users_for_perm, 
+                        default=safe_defaults
+                    )
+                    
+                    if st.button("تحديث الصلاحيات"):
+                        update_folder_permissions(target_perm_folder, new_selected_users)
+                        log_activity(st.session_state.user, "UPDATE_PERMISSIONS", "", target_perm_folder, "Updated folder permissions")
+                        st.success("✅ تم تحديث صلاحيات المجلد.")
+                        st.rerun()
+
+            with m_tab3:
                 del_m_type = st.radio("نوع المجلد", ["رئيسي (بكل محتوياته)", "فرعي فقط"], horizontal=True, key="del_m_type")
                 now_t = datetime.now().strftime("%Y-%m-%d %H:%M")
                 if del_m_type == "رئيسي (بكل محتوياته)":
@@ -1151,6 +1210,11 @@ else:
                     selected_role = st.selectbox(t['role_label'], role_opts)
                     selected_allowed = st.multiselect(t['allowed_folders_label'], get_all_folders(), default=["Main"])
                     
+                    # ✅ إذا كان الدور ضيف، نطلب منه اختيار مجلد خاص
+                    guest_folder_choice = None
+                    if selected_role == "Guest":
+                        guest_folder_choice = st.selectbox("اختر مجلد الوثائق العامة للضيف:", get_all_folders())
+                    
                     if st.form_submit_button(t['save_user_btn']):
                         if new_u and new_p:
                             now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
@@ -1158,6 +1222,12 @@ else:
                                 cursor = conn.cursor()
                                 try:
                                     cursor.execute("INSERT INTO users (username, password, allowed_folders, role, created_by, created_at, updated_at, changes_log, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active')", (new_u, hash_password(new_p), ",".join(selected_allowed), selected_role, st.session_state.user, now_str, now_str, f"Created on {now_str}"))
+                                    user_id = cursor.lastrowid
+                                    
+                                    # إذا كان ضيف، نضيف له مجلد عام خاص
+                                    if selected_role == "Guest" and guest_folder_choice:
+                                        cursor.execute("INSERT OR IGNORE INTO guest_folders (username, guest_folder) VALUES (?, ?)", (new_u, guest_folder_choice))
+                                    
                                     conn.commit()
                                     log_activity(st.session_state.user, "CREATE_USER", new_u, "", f"Created user: {new_u} with role {selected_role}")
                                     st.success(t['user_saved_success'].format(name=new_u))
@@ -1186,6 +1256,13 @@ else:
                     default_allowed = user_current_data["allowed_folders"] if user_current_data else ["Main"]
                     selected_edit_allowed = st.multiselect(t['allowed_folders_label'], get_all_folders(), default=default_allowed)
                     
+                    # ✅ إذا كان المستخدم ضيف، نظهر له خيار المجلد الخاص به
+                    guest_edit_folder = None
+                    if selected_edit_role == "Guest":
+                        current_guest_folder = get_guest_folder(target_u)
+                        default_gf = current_guest_folder if current_guest_folder else get_all_folders()[0]
+                        guest_edit_folder = st.selectbox("تعديل مجلد الوثائق العامة للضيف:", get_all_folders(), index=get_all_folders().index(default_gf) if default_gf in get_all_folders() else 0)
+                    
                     if st.form_submit_button(t['save_edit_btn']):
                         if target_u and target_u != "-- اختر مستخدم --":
                             now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
@@ -1196,6 +1273,12 @@ else:
                                     cursor.execute("UPDATE users SET password = ?, allowed_folders = ?, role = ?, updated_at = ? WHERE username = ?", (hash_password(edit_p.strip()), folders_str, selected_edit_role, now_str, target_u))
                                 else:
                                     cursor.execute("UPDATE users SET allowed_folders = ?, role = ?, updated_at = ? WHERE username = ?", (folders_str, selected_edit_role, now_str, target_u))
+                                
+                                # تحديث مجلد الضيف إذا تغير
+                                if selected_edit_role == "Guest" and guest_edit_folder:
+                                    cursor.execute("DELETE FROM guest_folders WHERE username = ?", (target_u,))
+                                    cursor.execute("INSERT OR IGNORE INTO guest_folders (username, guest_folder) VALUES (?, ?)", (target_u, guest_edit_folder))
+                                
                                 conn.commit()
                                 log_activity(st.session_state.user, "EDIT_USER", target_u, "", f"Edited user: {target_u}")
                             st.success(t['user_saved_success'].format(name=target_u))

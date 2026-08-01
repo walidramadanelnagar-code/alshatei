@@ -69,7 +69,9 @@ TRANSLATIONS = {
         'admin_new_user': "اسم مستخدم جديد (اختياري)",
         'admin_new_pass': "كلمة مرور جديدة",
         'admin_confirm_pass': "تأكيد كلمة المرور الجديدة",
-        'admin_update_btn': "تحديث"
+        'admin_update_btn': "تحديث",
+        # 🆕 نصوص جديدة
+        'public_files_title': "الملفات والتعميمات العامة"
     },
     'en': {
         'app_title': "Document Management & Sharing System",
@@ -98,7 +100,7 @@ TRANSLATIONS = {
         'nav_users': "Users Management",
         'nav_master': "Main Dashboard",
         'nav_reports': "Reports & Oversight",
-        'nav_files_guest': "Public Documents",
+        'nav_files_guest': "Public Documents & Files",
         'restore_msg': "Archived Reports",
         'create_report': "Create New Report",
         'create_folder': "Create New Main Folder",

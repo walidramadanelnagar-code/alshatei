@@ -146,8 +146,30 @@ def init_db():
             cursor.execute(f"ALTER TABLE report_items ADD COLUMN {col} TEXT")
         except:
             pass
+
+    # ============================================================
+    # 🆕 الجداول الجديدة المطلوبة للصلاحيات والضيوف
+    # ============================================================
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS folder_permissions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            folder_path TEXT NOT NULL,
+            username TEXT NOT NULL,
+            UNIQUE(folder_path, username)
+        )
+    ''')
     
-    # المستخدمين الافتراضيين
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS guest_folders (
+            username TEXT PRIMARY KEY,
+            guest_folder TEXT NOT NULL,
+            FOREIGN KEY(username) REFERENCES users(username) ON DELETE CASCADE
+        )
+    ''')
+    
+    # ============================================================
+    # بيانات افتراضية
+    # ============================================================
     cursor.execute("SELECT COUNT(*) FROM users")
     if cursor.fetchone()[0] == 0:
         now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
@@ -156,11 +178,18 @@ def init_db():
         cursor.execute("INSERT INTO users (username, password, allowed_folders, role, created_by, created_at, updated_at, changes_log, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                        ("walid", hash_password("123"), "Accounting,Main", "Manager", "admin", now_str, now_str, "Initial Manager", "active"))
     
-    # المجلدات الافتراضية
     cursor.execute("SELECT COUNT(*) FROM custom_folders")
     if cursor.fetchone()[0] == 0:
         for d in ['Accounting', 'Quality', 'Stores', 'Training', 'Main']:
             cursor.execute("INSERT OR IGNORE INTO custom_folders (folder_name, status) VALUES (?, 'active')", (d,))
+            
+            # ✅ منح صلاحيات افتراضية للأدمن والمستخدمين الحاليين على المجلدات القديمة
+            cursor.execute("SELECT username FROM users WHERE status = 'active' AND role != 'guest'")
+            for u_row in cursor.fetchall():
+                try:
+                    cursor.execute("INSERT OR IGNORE INTO folder_permissions (folder_path, username) VALUES (?, ?)", (d, u_row[0]))
+                except:
+                    pass
     
     conn.commit()
     conn.close()
@@ -238,3 +267,52 @@ def get_subfolders(parent_folder, include_deleted=False):
         result = [r[0] for r in cursor.fetchall()]
     conn.close()
     return result
+
+# ============================================================
+# 🆕 دوال جديدة لجداول الصلاحيات والضيوف
+# ============================================================
+
+def get_folder_permissions(folder_path):
+    """جلب قائمة المستخدمين المسموح لهم برؤية مجلد معين"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT username FROM folder_permissions WHERE folder_path = ?", (folder_path,))
+    result = [r[0] for r in cursor.fetchall()]
+    conn.close()
+    return result
+
+def update_folder_permissions(folder_path, allowed_users):
+    """تحديث صلاحيات مجلد معين"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM folder_permissions WHERE folder_path = ?", (folder_path,))
+    for user in allowed_users:
+        cursor.execute("INSERT OR IGNORE INTO folder_permissions (folder_path, username) VALUES (?, ?)", (folder_path, user))
+    conn.commit()
+    conn.close()
+
+def get_user_viewable_folders(username, is_admin=False):
+    """جلب المجلدات التي يمكن للمستخدم رؤيتها بناءً على صلاحياته (للأدمن والمستخدمين العاديين)"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    if is_admin:
+        cursor.execute("SELECT folder_name FROM custom_folders WHERE status = 'active'")
+    else:
+        cursor.execute("""
+            SELECT DISTINCT cf.folder_name 
+            FROM custom_folders cf
+            JOIN folder_permissions fp ON cf.folder_name = fp.folder_path
+            WHERE cf.status = 'active' AND fp.username = ?
+        """, (username,))
+    result = [r[0] for r in cursor.fetchall()]
+    conn.close()
+    return result
+
+def get_guest_folder(username):
+    """جلب المجلد الخاص بالضيف"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT guest_folder FROM guest_folders WHERE username = ?", (username,))
+    row = cursor.fetchone()
+    conn.close()
+    return row[0] if row else None
