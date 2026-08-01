@@ -251,20 +251,15 @@ else:
     is_admin = (st.session_state.role == "Admin" or st.session_state.user == "admin")
     is_manager = (st.session_state.role == "Manager")
 
-    # ✅ فصل التبويبات بين الضيف والمستخدم العادي
-    if is_guest:
-        # الضيف عنده تبويبات خاصة (الوثائق العامة، قاعدة الملفات، والتقارير فقط)
-        main_title = "📄 " + t['nav_files_guest']
-        files_screen_title = "📂 " + t['nav_files']
-        nav_tabs = [main_title, files_screen_title, t['nav_reports']]
-    else:
-        main_title = "📂 " + t['nav_main_user']
-        files_screen_title = "📁 " + t['nav_files']
-        nav_tabs = [main_title, files_screen_title, t['nav_reports']]
-        if is_admin or is_manager:
-            nav_tabs.append("👤 " + t['nav_users'])
-        if is_admin:
-            nav_tabs.append("⚙️ " + t['nav_master'])
+    # ✅ توحيد التبويبات للجميع (الضيف والمستخدمين العاديين)
+    main_title = "📂 " + t['nav_main_user']
+    files_screen_title = "📁 " + t['nav_files']
+    
+    nav_tabs = [main_title, files_screen_title, t['nav_reports']]
+    if is_admin or is_manager:
+        nav_tabs.append("👤 " + t['nav_users'])
+    if is_admin:
+        nav_tabs.append("⚙️ " + t['nav_master'])
 
     # ✅ الرأس والتنقل
     col_logo, col_controls = st.columns([3, 2])
@@ -310,32 +305,8 @@ else:
         st.title(main_title)
         
         if is_guest:
-            # 🛑 الضيف: يظهر له فقط الملفات اللي تم إرسالها له (الوثائق العامة القديمة)
-            with get_connection() as conn:
-                cursor = conn.cursor()
-                cursor.execute("""
-                    SELECT filename, file_path, timestamp, sender_username, message
-                    FROM user_files 
-                    WHERE recipient_username = ?
-                    ORDER BY timestamp DESC
-                """, (st.session_state.user,))
-                guest_files = cursor.fetchall()
-            
-            if guest_files:
-                for f_name, f_path, time_str, sender, msg in guest_files:
-                    col1, col2, col3 = st.columns([2, 2, 1])
-                    col1.markdown(f"📄 **{f_name}**")
-                    col2.caption(f"👤 من: {sender} | 🕒 {time_str}")
-                    if msg: col2.caption(f"📝 {msg}")
-                    
-                    if os.path.exists(f_path):
-                        with open(f_path, "rb") as f:
-                            col3.download_button("⬇️ تحميل", f, file_name=f_name, key=f"dl_guest_{f_name}")
-                    else:
-                        col3.caption("الملف غير موجود")
-            else:
-                st.info(t['no_inbox'])
-
+            # 🛑 الضيف: لا يظهر له أي خيارات مراسلات، فقط تنبيه
+            st.info("هذه الصفحة مخصصة للموظفين. يمكنك تصفح ملفاتك في التبويبات الأخرى.")
         else:
             # 🟢 شاشة اليوزر العادي (ليها المرسلات والوارد)
             st.subheader(t['send_title'])
@@ -595,11 +566,9 @@ else:
             st.subheader("📁 المجلدات الرئيسية")
             if is_admin:
                 allowed_folders = get_all_folders()
-            elif is_guest:
-                # ✅ الضيف: بيشوف المجلدات اللي ليه صلاحية فيها (عن طريق جدول folder_permissions)
-                allowed_folders = get_user_viewable_folders(st.session_state.user, False)
             else:
-                allowed_folders = get_user_viewable_folders(st.session_state.user, is_admin)
+                # الضيف وبقية المستخدمين: بيشوفوا المجلدات اللي ليهم صلاحية فيها
+                allowed_folders = get_user_viewable_folders(st.session_state.user, False)
             
             if selected_main_folder_filter != "الكل" and selected_main_folder_filter in allowed_folders:
                 allowed_folders = [selected_main_folder_filter]
@@ -663,8 +632,6 @@ else:
                 current_parent = st.session_state.nav_path[0]
                 if is_admin:
                     can_upload_here = True
-                elif is_guest:
-                    can_upload_here = False
                 else:
                     user_folders = get_user_viewable_folders(st.session_state.user, False)
                     can_upload_here = current_parent in user_folders
