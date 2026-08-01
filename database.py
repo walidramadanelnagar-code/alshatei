@@ -16,7 +16,7 @@ def init_db():
     conn = get_connection()
     cursor = conn.cursor()
     
-    # ===== الجداول القديمة =====
+    # ===== الجداول الأساسية =====
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS file_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -168,7 +168,7 @@ def init_db():
     ''')
     
     # ============================================================
-    # بيانات افتراضية
+    # بيانات افتراضية (المستخدمين والمجلدات)
     # ============================================================
     cursor.execute("SELECT COUNT(*) FROM users")
     if cursor.fetchone()[0] == 0:
@@ -316,3 +316,24 @@ def get_guest_folder(username):
     row = cursor.fetchone()
     conn.close()
     return row[0] if row else None
+
+# 🆕 دالة تزامن صلاحيات المستخدمين القديمة مع الجدول الجديد
+def sync_legacy_permissions():
+    """هذه الدالة تنقل صلاحيات المستخدمين من allowed_folders في جدول users إلى جدول folder_permissions"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    # جلب كل المستخدمين النشطين غير الضيوف
+    cursor.execute("SELECT username, allowed_folders, role FROM users WHERE status = 'active' AND role != 'guest'")
+    users = cursor.fetchall()
+    
+    for username, allowed_folders_str, role in users:
+        if allowed_folders_str and allowed_folders_str.strip():
+            folders = [f.strip() for f in allowed_folders_str.split(",") if f.strip()]
+            for folder_path in folders:
+                # التأكد أن المجلد موجود فعلًا في جدول المجلدات
+                cursor.execute("SELECT 1 FROM custom_folders WHERE folder_name = ? AND status = 'active'", (folder_path,))
+                if cursor.fetchone():
+                    cursor.execute("INSERT OR IGNORE INTO folder_permissions (folder_path, username) VALUES (?, ?)", (folder_path, username))
+    conn.commit()
+    conn.close()
+    return True

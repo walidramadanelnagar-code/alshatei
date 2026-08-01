@@ -15,7 +15,8 @@ from database import (
     get_all_users, get_all_folders, get_subfolders, 
     get_connection, hash_password,
     get_folder_permissions, update_folder_permissions,
-    get_user_viewable_folders, get_guest_folder
+    get_user_viewable_folders, get_guest_folder,
+    sync_legacy_permissions  # ✅ استدعاء دالة التزامن الجديدة
 )
 from translations import TRANSLATIONS
 
@@ -234,6 +235,18 @@ else:
     is_guest = (st.session_state.role == "guest")
     is_admin = (st.session_state.role == "Admin" or st.session_state.user == "admin")
     is_manager = (st.session_state.role == "Manager")
+
+    # ============================================================
+    # ✅ زر تزامن صلاحيات المستخدمين القدامى (مرة واحدة)
+    # ============================================================
+    if is_admin:
+        if st.button("🔄 تزامن الصلاحيات القديمة مع النظام الجديد (للمستخدمين السابقين)"):
+            if sync_legacy_permissions():
+                st.success("✅ تم نقل صلاحيات جميع المستخدمين من النظام القديم إلى النظام الجديد بنجاح!")
+                st.rerun()
+            else:
+                st.error("حدث خطأ أثناء التزامن.")
+        st.divider()
 
     if is_guest:
         main_title = "📄 " + t['nav_files_guest']
@@ -861,7 +874,7 @@ else:
                         st.caption("لا يوجد مجلدات فرعية.")
 
     # ----------------------------------------------------
-    # 3. التقارير والرقابة (التبويبة الثالثة) - المعدل النهائي
+    # 3. التقارير والرقابة (التبويبة الثالثة)
     # ----------------------------------------------------
     with tabs[2]:
         st.title("📊 " + t['nav_reports'])
