@@ -25,6 +25,15 @@ st.markdown("""
 <link rel="icon" type="image/x-icon" href="static/favicon.ico">
 """, unsafe_allow_html=True)
 
+# ✅ هذا السطر يضمن أن الصفحة تفتح من الأعلى دائماً
+st.markdown("""
+<script>
+    window.onload = function() {
+        window.scrollTo(0,0);
+    }
+</script>
+""", unsafe_allow_html=True)
+
 # =============================================================
 # 🎨 إعدادات اللغة
 # =============================================================
@@ -229,9 +238,6 @@ if not st.session_state.logged_in:
             st.error("خطأ في بيانات الدخول / Invalid Credentials")
 
 else:
-    # ✅ هذا السطر يضمن أن الصفحة تبدأ من الأعلى عند كل دخول جديد
-    st.session_state.nav_path = []
-
     t = TRANSLATIONS[st.session_state.lang]
 
     is_guest = (st.session_state.role == "guest")
@@ -649,7 +655,7 @@ else:
             if current_display_folder != "ROOT":
                 current_parent = st.session_state.nav_path[0]
                 
-                # ✅ تم التعديل هنا: استخدام النظام الجديد للصلاحيات بدلاً من allowed القديم
+                # ✅ تم إصلاح صلاحية الدخول هنا
                 if is_admin:
                     can_upload_here = True
                 elif is_guest:
