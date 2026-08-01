@@ -25,7 +25,6 @@ st.markdown("""
 <link rel="icon" type="image/x-icon" href="static/favicon.ico">
 """, unsafe_allow_html=True)
 
-# ✅ سكربت لضمان ظهور التطبيق من الأعلى دائماً
 st.markdown("""
 <script>
     window.onload = function() {
@@ -49,191 +48,108 @@ if 'lang' not in st.session_state:
     st.session_state.lang = 'ar'
 
 # =============================================================
-# 🎨 تصميم فليكس بوكس الاحترافي (يتغلب على الدارك مود والتداخلات)
+# 🎨 التصميم النهائي (نسخة التبويبات المضمونة)
 # =============================================================
 st.markdown(f"""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
 
-    /* ===== إخفاء عناصر Streamlit التقليدية ===== */
     header {{visibility: hidden !important;}}
     #MainMenu {{visibility: hidden !important;}}
     footer {{visibility: hidden !important;}}
     .stDeployButton {{display: none !important;}}
     [data-testid="stStatusWidget"] {{visibility: hidden !important;}}
     
-    /* ===== الخط الأساسي ===== */
-    html, body, .stApp, h1, h2, h3, h4, h5, h6, p, span, div {{
+    html, body, .stApp, .stMarkdown, h1, h2, h3, h4, h5, h6, div, span, p {{
         font-family: 'Cairo', sans-serif !important;
     }}
     
-    /* ===== الخلفية (تتغلب على الدارك مود تماماً) ===== */
-    .stApp {{
-        background: #f4f7fc !important; /* خلفية زرقاء رمادية فاتحة جداً */
-    }}
+    .stApp {{ background-color: #f1f5f9 !important; }}
     
     section[data-testid="stSidebar"] {{ display: none !important; }}
     
-    /* ===== تنسيق التبويبات (Tabs) عالي الدقة ===== */
+    /* ✅ تنسيق أزرار التنقل (أسلوب التبويبات) */
     .stTabs [data-baseweb="tab-list"] {{
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        background: #ffffff;
-        padding: 8px 16px;
-        border-radius: 16px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
-        border: 1px solid #eef2f6;
-        margin-bottom: 24px !important;
+        gap: 8px !important;
+        background-color: #ffffff !important;
+        padding: 8px 12px !important;
+        border-radius: 12px !important;
+        border: 1px solid #e2e8f0 !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+        margin-bottom: 20px !important;
     }}
     .stTabs [data-baseweb="tab"] {{
-        border-radius: 12px;
-        padding: 8px 20px;
-        font-weight: 600;
-        font-size: 14px;
-        color: #64748b !important;
-        transition: 0.2s;
-        border: 1px solid transparent;
+        border-radius: 8px !important;
+        padding: 8px 16px !important;
+        font-weight: 600 !important;
+        font-size: 15px !important;
+        color: #1e293b !important;
+        font-family: 'Cairo', sans-serif !important;
     }}
     .stTabs [aria-selected="true"] {{
-        background: #2563eb !important;
+        background-color: #2563eb !important;
         color: #ffffff !important;
-        box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
-        border: 1px solid #2563eb;
     }}
 
-    /* ===== نظام الكروت (Cards) الاحترافي بدون تداخلات ===== */
-    .modern-card {{
-        background: #ffffff;
-        padding: 20px 24px;
-        border-radius: 16px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
-        border: 1px solid #eef2f6;
-        margin-bottom: 16px;
-        transition: 0.2s;
-    }}
-    .modern-card:hover {{
-        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
-        border-color: #dbeafe;
-    }}
-
-    /* ===== إخفاء الحواف المزدوجة والعناصر الزائدة ===== */
+    /* ✅ تنسيق الكروت البيضاء (لكل الشاشات) */
     div[data-testid="stVerticalBlock"] > div:has(div.stTextInput),
     div[data-testid="stVerticalBlock"] > div:has(div.stTextArea),
     div[data-testid="stVerticalBlock"] > div:has(div.stSelectbox),
     div[data-testid="stVerticalBlock"] > div:has(div.stFileUploader),
-    .stAlert, .stInfo, .stSuccess, .stWarning, .stError {{
-        background: transparent !important;
-        padding: 0 !important;
-        border: none !important;
-        box-shadow: none !important;
-        margin-bottom: 12px !important;
-    }}
-
-    /* ===== تنسيق الحقول (Inputs) ===== */
-    .stTextInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"],
-    .stMultiSelect div[data-baseweb="select"] {{
-        background: #f8fafc !important;
+    .stAlert, .stInfo, .stSuccess, .stWarning, .stError,
+    .stExpander, .stTabs {{
+        background-color: #ffffff !important;
+        padding: 16px !important;
+        border-radius: 12px !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
         border: 1px solid #e2e8f0 !important;
-        border-radius: 12px !important;
-        padding: 12px 16px !important;
-        font-size: 14px;
-        color: #1e293b !important;
-        transition: 0.2s;
-    }}
-    .stTextInput input:focus, .stTextArea textarea:focus {{
-        border-color: #2563eb !important;
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
+        margin-bottom: 15px !important;
     }}
 
-    /* ===== تنسيق الأزرار (Buttons) الحديث ===== */
+    h1, h2, h3, h4, h5, h6 {{ color: #2563eb !important; font-weight: 700 !important; }}
+    .stApp, .stMarkdown, .stCaption, .stDataFrame,
+    .stMetric, .stColumns, .stContainer, .stEmpty,
+    .stTextInput label, .stTextArea label, .stSelectbox label,
+    .stFileUploader label, .stRadio label, .stCheckbox label {{
+        color: #1e293b !important;
+        font-weight: 500 !important;
+    }}
+
+    .stTextInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"],
+    .stMultiSelect div[data-baseweb="select"], .stNumberInput input, .stDateInput input,
+    .stTimeInput input {{
+        background-color: #ffffff !important;
+        color: #1e293b !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 8px !important;
+    }}
+
+    /* ✅ الأزرار (أزرق ونص أبيض) */
     .stButton button {{
-        background: #2563eb !important;
         color: #ffffff !important;
-        border-radius: 12px !important;
+        background-color: #2563eb !important;
+        border-radius: 8px !important;
+        border: none !important;
         padding: 10px 24px !important;
         font-weight: 600 !important;
-        border: none !important;
-        transition: 0.2s;
-        box-shadow: 0 2px 4px rgba(37, 99, 235, 0.1);
+        transition: 0.3s;
     }}
-    .stButton button:hover {{
-        background: #1d4ed8 !important;
-        transform: translateY(-2px);
-        box-shadow: 0 6px 12px rgba(37, 99, 235, 0.2);
-    }}
-    .stButton button[kind="secondary"] {{
-        background: #f1f5f9 !important;
-        color: #1e293b !important;
-        border: 1px solid #e2e8f0 !important;
-    }}
-    .stButton button[kind="secondary"]:hover {{
-        background: #e2e8f0 !important;
-    }}
-
-    /* ===== أزرار الملفات المربعة (Square Icon Buttons) ===== */
-    .action-icon-btn {{
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 36px;
-        height: 36px;
-        border-radius: 10px;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-        color: #475569;
-        transition: 0.2s;
-        cursor: pointer;
-        text-decoration: none;
-        font-size: 16px;
-    }}
-    .action-icon-btn:hover {{
-        background: #eef2f6;
-        color: #0f172a;
-        transform: translateY(-2px);
-    }}
-    .btn-accept {{
-        color: #22c55e;
-        border-color: #bbf7d0;
-    }}
-    .btn-accept:hover {{
-        background: #dcfce7;
-        border-color: #22c55e;
-    }}
-    .btn-reject {{
-        color: #ef4444;
-        border-color: #fecaca;
-    }}
-    .btn-reject:hover {{
-        background: #fee2e2;
-        border-color: #ef4444;
-    }}
-
-    /* ===== العناوين ===== */
-    h1, h2, h3, h4, h5, h6 {{
-        color: #0f172a !important;
-        font-weight: 700 !important;
-        margin-bottom: 8px !important;
-    }}
-    .text-muted {{
-        color: #64748b !important;
-        font-size: 14px;
-    }}
+    .stButton button:hover {{ background-color: #1d4ed8 !important; transform: translateY(-2px); }}
     
-    /* ===== الفوتر ===== */
+    .stButton button[kind="secondary"],
+    .stButton button:not([kind]) {{ background-color: #1e293b !important; }}
+
     .custom-footer {{
         position: fixed;
         left: 0;
         bottom: 0;
         width: 100%;
-        background: #ffffff;
+        background: rgba(255, 255, 255, 0.9);
         text-align: center;
         padding: 12px 0;
-        font-size: 13px;
-        color: #64748b;
-        border-top: 1px solid #eef2f6;
+        font-size: 14px;
+        border-top: 1px solid #e2e8f0;
         z-index: 999;
-        backdrop-filter: blur(10px);
     }}
     .custom-footer span {{ color: #2563eb; font-weight: 600; }}
 </style>
@@ -299,29 +215,23 @@ if guest_login:
 
 if not st.session_state.logged_in:
     st.markdown("""
-    <div style="display: flex; justify-content: center; margin-top: 40px;">
-        <div class="modern-card" style="max-width: 500px; width: 100%; text-align: center;">
-            <h1 style="font-size: 28px; color: #2563eb;">مجموعة أعمال الشاطئ</h1>
-            <div style="width: 60px; height: 3px; background: #2563eb; margin: 12px auto 24px auto; border-radius: 4px;"></div>
-            <i class="fas fa-lock-open" style="font-size: 40px; color: #2563eb; margin-bottom: 16px; display: block;"></i>
-            <h3 style="font-size: 20px; margin-bottom: 24px;">تسجيل الدخول للنظام</h3>
-            
-            <div style="text-align: right; margin-bottom: 12px;">
-                <label style="font-weight: 600; font-size: 14px; color: #0f172a;">اسم المستخدم</label>
-            </div>
-            """, unsafe_allow_html=True)
-    
-    username_input = st.text_input("", placeholder="أدخل اسم المستخدم...", label_visibility="collapsed")
+    <div style="display: flex; justify-content: center; margin-top: 40px; margin-bottom: 20px;">
+        <h1 style="font-size: 42px; font-weight: 700; color: #2563eb;">مجموعة أعمال الشاطئ</h1>
+    </div>
+    """, unsafe_allow_html=True)
     
     st.markdown("""
-            <div style="text-align: right; margin-top: 12px; margin-bottom: 12px;">
-                <label style="font-weight: 600; font-size: 14px; color: #0f172a;">كلمة المرور</label>
-            </div>
-            """, unsafe_allow_html=True)
+    <h1 style='text-align: center; font-size: 34px;'>
+        <i class="fas fa-lock-open" style="color: #2563eb; margin-right: 10px;"></i> 
+        تسجيل الدخول للنظام
+    </h1>
+    <div style='width: 100px; height: 3px; background: #2563eb; margin: 10px auto 30px auto; border-radius: 2px;'></div>
+    """, unsafe_allow_html=True)
     
-    password_input = st.text_input("", type="password", placeholder="أدخل كلمة المرور...", label_visibility="collapsed")
+    username_input = st.text_input("اسم المستخدم")
+    password_input = st.text_input("كلمة المرور", type="password")
     
-    if st.button("تسجيل الدخول", type="primary", use_container_width=True):
+    if st.button("تسجيل الدخول", type="primary"):
         user_data = verify_user(username_input, password_input)
         if user_data:
             st.session_state.logged_in = True
@@ -333,7 +243,6 @@ if not st.session_state.logged_in:
             st.rerun()
         else:
             st.error("خطأ في بيانات الدخول / Invalid Credentials")
-    st.markdown("</div>", unsafe_allow_html=True)
 
 else:
     t = TRANSLATIONS[st.session_state.lang]
@@ -342,7 +251,7 @@ else:
     is_admin = (st.session_state.role == "Admin" or st.session_state.user == "admin")
     is_manager = (st.session_state.role == "Manager")
 
-    # ✅ توحيد التبويبات للجميع
+    # ✅ توحيد التبويبات للجميع (الضيف والمستخدمين العاديين)
     main_title = "📂 " + t['nav_main_user']
     files_screen_title = "📁 " + t['nav_files']
     
@@ -356,8 +265,8 @@ else:
     col_logo, col_controls = st.columns([3, 2])
     with col_logo:
         st.markdown(f"""
-        <div class="modern-card" style="display: flex; align-items: center; padding: 12px 20px; margin-bottom: 0;">
-            <h2 style="font-size: 22px; color: #0f172a; margin: 0;">{t['app_title']}</h2>
+        <div style="margin-top: 5px;">
+            <h2 style="font-size: 24px; color: #0f172a; margin-bottom: 0;">{t['app_title']}</h2>
         </div>
         """, unsafe_allow_html=True)
     with col_controls:
@@ -371,9 +280,10 @@ else:
                 st.session_state.lang = 'en'
                 st.rerun()
         with col_btn:
+            # ✅ رسالة الترحيب
             st.markdown(f"""
-            <div style="display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 6px;">
-                <span style="font-size: 14px; font-weight: 600; color: #0f172a;">👋 {st.session_state.user}</span>
+            <div style="display: flex; align-items: center; justify-content: flex-end; gap: 15px; margin-top: 5px;">
+                <span style="font-size: 16px; font-weight: 600; color: #0f172a;">👋 مرحباً، {st.session_state.user}</span>
             </div>
             """, unsafe_allow_html=True)
             if st.button(t['logout'], use_container_width=True):
@@ -392,12 +302,13 @@ else:
     # 1. الشاشة الرئيسية (التبويبة الأولى)
     # ----------------------------------------------------
     with tabs[0]:
-        st.markdown(f"<h2 style='font-size: 24px; margin-bottom: 16px;'>{main_title}</h2>", unsafe_allow_html=True)
+        st.title(main_title)
         
         if is_guest:
-            st.markdown('<div class="modern-card"><p class="text-muted" style="margin: 0;">هذه الصفحة مخصصة للموظفين. يمكنك تصفح ملفاتك في التبويبات الأخرى.</p></div>', unsafe_allow_html=True)
+            # 🛑 الضيف: لا يظهر له أي خيارات مراسلات، فقط تنبيه
+            st.info("هذه الصفحة مخصصة للموظفين. يمكنك تصفح ملفاتك في التبويبات الأخرى.")
         else:
-            st.markdown('<div class="modern-card">', unsafe_allow_html=True)
+            # 🟢 شاشة اليوزر العادي (ليها المرسلات والوارد)
             st.subheader(t['send_title'])
             with st.form("send_file_form", clear_on_submit=True):
                 active_users = [u[0] for u in get_all_users() if u[7] == 'active' and u[0] != st.session_state.user and u[2] != "Guest"]
@@ -409,7 +320,7 @@ else:
                     msg = st.text_area(t['your_message'])
                     uploaded_file = st.file_uploader(t['choose_file'], type=None, help="200 MB كحد أقصى.")
                     
-                    if st.form_submit_button(t['send_now'], use_container_width=True):
+                    if st.form_submit_button(t['send_now']):
                         if uploaded_file and recipient and recipient != "--- اختر المستخدم ---":
                             progress_bar = st.progress(0, t['sending'])
                             user_folder = os.path.join("storage", "UserFiles", recipient)
@@ -427,10 +338,8 @@ else:
                             st.rerun()
                         else:
                             st.error(t['send_error'])
-            st.markdown('</div>', unsafe_allow_html=True)
             
             st.divider()
-            st.markdown('<div class="modern-card">', unsafe_allow_html=True)
             st.subheader(t['inbox_title'])
             with get_connection() as conn:
                 cursor = conn.cursor()
@@ -448,7 +357,7 @@ else:
                             col3.download_button("⬇️ تحميل", f, file_name=f_name, key=f"dl_inbox_{msg_id}")
                     else:
                         col3.caption(t['file_not_found'])
-                    if st.button("🗑️", key=f"del_msg_{msg_id}"):
+                    if st.button(t['delete_btn'], key=f"del_msg_{msg_id}"):
                         with get_connection() as conn:
                             conn.cursor().execute("UPDATE user_files SET deleted_by_recipient = 1 WHERE id = ?", (msg_id,))
                             conn.commit()
@@ -456,10 +365,8 @@ else:
                         st.rerun()
             else:
                 st.info(t['no_inbox'])
-            st.markdown('</div>', unsafe_allow_html=True)
 
             st.divider()
-            st.markdown('<div class="modern-card">', unsafe_allow_html=True)
             st.subheader(t['sent_title'])
             with get_connection() as conn:
                 cursor = conn.cursor()
@@ -477,7 +384,7 @@ else:
                             col3.download_button("⬇️ تحميل", f, file_name=f_name, key=f"dl_sent_{msg_id}")
                     else:
                         col3.caption(t['file_not_found'])
-                    if st.button("🗑️", key=f"del_sent_{msg_id}"):
+                    if st.button(t['delete_btn'], key=f"del_sent_{msg_id}"):
                         with get_connection() as conn:
                             conn.cursor().execute("UPDATE user_files SET deleted_by_sender = 1 WHERE id = ?", (msg_id,))
                             conn.commit()
@@ -485,15 +392,13 @@ else:
                         st.rerun()
             else:
                 st.info(t['no_sent'])
-            st.markdown('</div>', unsafe_allow_html=True)
 
     # ----------------------------------------------------
     # 2. إدارة الملفات والمجلدات (التبويبة الثانية)
     # ----------------------------------------------------
     with tabs[1]:
-        st.markdown(f"<h2 style='font-size: 24px; margin-bottom: 16px;'>{files_screen_title}</h2>", unsafe_allow_html=True)
+        st.title(files_screen_title)
         
-        st.markdown('<div class="modern-card">', unsafe_allow_html=True)
         st.subheader(t['search_title'])
         f_col1, f_col2, f_col3, f_col4 = st.columns(4)
         search_keyword = f_col1.text_input(t['search_input'], "").strip().lower()
@@ -506,8 +411,7 @@ else:
         selected_user_filter = f_col2.selectbox(t['filter_user'], [t['all_option']] + usernames_list, key="user_filter")
         selected_main_folder_filter = f_col3.selectbox(t['filter_main'], [t['all_option']] + get_all_folders(), key="main_folder_filter")
         file_extension_filter = f_col4.selectbox(t['filter_ext'], [t['all_option'], "pdf", "txt", "xlsx", "xls", "docx", "png", "jpg"], key="ext_filter")
-        st.markdown('</div>', unsafe_allow_html=True)
-
+        
         st.divider()
 
         if 'nav_path' not in st.session_state:
@@ -612,7 +516,6 @@ else:
         # ✅ الجزء المخصص للملفات والتعميمات العامة (الضيف مشوفوش)
         if current_display_folder == "ROOT":
             if not is_guest:
-                st.markdown('<div class="modern-card">', unsafe_allow_html=True)
                 st.subheader("📂 " + t['public_files_title'])
                 
                 # جلب المجلدات المسموح ليها بناءً على جدول الصلاحيات الجديد
@@ -656,16 +559,15 @@ else:
                     render_explorer_files([(f[0], f[1], f[2], f[3]) for f in filtered_flat_files], "", can_delete_root)
                 else:
                     st.info("لا توجد مجلدات متاحة لك حالياً.")
-                st.markdown('</div>', unsafe_allow_html=True)
 
                 st.markdown("---")
             
             # عرض أزرار المجلدات للدخول ليها (للمستخدمين العاديين والضيف)
-            st.markdown('<div class="modern-card">', unsafe_allow_html=True)
             st.subheader("📁 المجلدات الرئيسية")
             if is_admin:
                 allowed_folders = get_all_folders()
             else:
+                # الضيف وبقية المستخدمين: بيشوفوا المجلدات اللي ليهم صلاحية فيها
                 allowed_folders = get_user_viewable_folders(st.session_state.user, False)
             
             if selected_main_folder_filter != "الكل" and selected_main_folder_filter in allowed_folders:
@@ -675,7 +577,6 @@ else:
                 if st.button(f"📂 {folder}", key=f"btn_enter_{folder}", use_container_width=True):
                     go_to_folder(folder, None)
                     st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
                     
         else:
             # لما يكون المستخدم داخل مجلد فرعي
@@ -725,7 +626,6 @@ else:
         # ✅ منع الضيف تماماً من رفع أي ملفات
         if not is_guest:
             st.divider()
-            st.markdown('<div class="modern-card">', unsafe_allow_html=True)
             st.subheader(t['upload_section'])
             
             if current_display_folder != "ROOT":
@@ -741,7 +641,7 @@ else:
                     
                     uploaded_file = st.file_uploader(t['choose_file'], key="upload_main_file")
                     
-                    if st.button(t['upload_file_btn'], use_container_width=True):
+                    if st.button(t['upload_file_btn']):
                         if uploaded_file is not None:
                             target_dir = os.path.join("storage", current_display_folder_tag)
                             target_file_path = os.path.join(target_dir, uploaded_file.name)
@@ -787,12 +687,10 @@ else:
                     st.info(t['folder_permission'])
             else:
                 st.info(t['folder_empty'])
-            st.markdown('</div>', unsafe_allow_html=True)
 
         st.markdown("---")
         # ✅ منع الضيف من إدارة المجلدات
         if not is_guest and (is_admin or is_manager):
-            st.markdown('<div class="modern-card">', unsafe_allow_html=True)
             st.subheader(t['manage_folders'])
             
             col_f1, col_f2 = st.columns(2)
@@ -802,7 +700,7 @@ else:
                 with st.form("create_main_folder_form", clear_on_submit=True):
                     new_m = st.text_input("اسم المجلد الرئيسي الجديد").strip()
                     
-                    if st.form_submit_button("إنشاء", use_container_width=True):
+                    if st.form_submit_button("إنشاء"):
                         if new_m:
                             with get_connection() as conn:
                                 cursor = conn.cursor()
@@ -825,7 +723,7 @@ else:
                     allowed_p = get_all_folders() if is_admin else st.session_state.allowed
                     p_choice = st.selectbox("اختر المجلد الرئيسي", allowed_p)
                     new_sub = st.text_input("اسم المجلد الفرعي الجديد").strip()
-                    if st.form_submit_button("إنشاء الفرعي", use_container_width=True):
+                    if st.form_submit_button("إنشاء الفرعي"):
                         if new_sub and p_choice:
                             with get_connection() as conn:
                                 cursor = conn.cursor()
@@ -842,6 +740,7 @@ else:
                             st.error("يرجى تعبئة الحقول.")
 
             st.markdown("⚙️ " + t['manage_folders'])
+            # ✅ تقسيم التبويبات: تعديل الاسم، تعديل الصلاحيات، وحذف المجلد
             m_tab1, m_tab2, m_tab3 = st.tabs(["✏️ " + t['rename_tab'], "👥 تعديل الصلاحيات", "🗑️ " + t['delete_tab']])
             
             with m_tab1:
@@ -897,7 +796,10 @@ else:
                 if target_perm_folder:
                     all_active_users_for_perm = [u[0] for u in get_all_users() if u[7] == 'active' and u[0] != st.session_state.user and u[2] != "Guest"]
                     
+                    # جلب الصلاحيات الحالية بناءً على قاعدة البيانات
                     current_permissions = get_folder_permissions(target_perm_folder)
+                    
+                    # التأكد أن القيم الافتراضية متطابقة مع القائمة
                     safe_defaults = [u for u in current_permissions if u in all_active_users_for_perm]
                     
                     new_selected_users = st.multiselect(
@@ -906,7 +808,7 @@ else:
                         default=safe_defaults
                     )
                     
-                    if st.button("تحديث الصلاحيات", use_container_width=True):
+                    if st.button("تحديث الصلاحيات"):
                         update_folder_permissions(target_perm_folder, new_selected_users)
                         log_activity(st.session_state.user, "UPDATE_PERMISSIONS", "", target_perm_folder, "Updated folder permissions")
                         st.success("✅ تم تحديث صلاحيات المجلد.")
@@ -918,7 +820,7 @@ else:
                 if del_m_type == "رئيسي (بكل محتوياته)":
                     if is_admin:
                         target_del_m = st.selectbox("المجلد الرئيسي للحذف", get_all_folders(), key="target_del_m")
-                        if st.button("⚠️ نقل للمحذوفات", type="primary", use_container_width=True):
+                        if st.button("⚠️ نقل للمحذوفات", type="primary"):
                             with get_connection() as conn:
                                 cursor = conn.cursor()
                                 cursor.execute("UPDATE custom_folders SET status = 'deleted', deleted_by = ?, deleted_at = ? WHERE folder_name = ?", (st.session_state.user, now_t, target_del_m))
@@ -934,7 +836,7 @@ else:
                     subs_to_del = get_subfolders(p_for_sub_del)
                     if subs_to_del:
                         target_del_sub = st.selectbox("المجلد الفرعي", subs_to_del, key="target_del_sub")
-                        if st.button("⚠️ نقل للمحذوفات", type="primary", use_container_width=True):
+                        if st.button("⚠️ نقل للمحذوفات", type="primary"):
                             tag_sub = f"{p_for_sub_del} / {target_del_sub}"
                             with get_connection() as conn:
                                 cursor = conn.cursor()
@@ -945,13 +847,12 @@ else:
                             st.rerun()
                     else:
                         st.caption("لا يوجد مجلدات فرعية.")
-            st.markdown('</div>', unsafe_allow_html=True)
 
     # ----------------------------------------------------
     # 3. التقارير والرقابة (التبويبة الثالثة)
     # ----------------------------------------------------
     with tabs[2]:
-        st.markdown(f"<h2 style='font-size: 24px; margin-bottom: 16px;'>📊 {t['nav_reports']}</h2>", unsafe_allow_html=True)
+        st.title("📊 " + t['nav_reports'])
         
         # =========================================================
         # 1️⃣ أولاً: التقارير النشطة
@@ -975,7 +876,6 @@ else:
             st.info("لا توجد تقارير نشطة.")
         
         for r_id, r_title, r_desc, r_creator, r_date in reports_list:
-            st.markdown('<div class="modern-card">', unsafe_allow_html=True)
             st.caption(f"📋 **{r_title}** - بواسطة: {r_creator} - {r_date}")
             with st.expander(f"", expanded=False):
                 st.caption(r_desc if r_desc else "لا يوجد وصف.")
@@ -990,26 +890,59 @@ else:
                         (i_id, i_title, i_user, i_stat, i_file, i_up_by, i_up_at, i_created, i_app_by, i_app_at) = item
                         
                         cols = st.columns([3, 2, 1.5, 3])
+                        
                         cols[0].markdown(f"**{i_title}**")
                         cols[0].caption(f"👤 {i_user}")
-                        if i_stat == "pending": cols[1].warning("⏳ في الانتظار")
-                        elif i_stat == "uploaded": cols[1].info("📤 تم الرفع")
-                        else: cols[1].success("✅ مقبول")
+                        
+                        if i_stat == "pending":
+                            cols[1].warning("⏳ في الانتظار")
+                        elif i_stat == "uploaded":
+                            cols[1].info("📤 تم الرفع")
+                        else:
+                            cols[1].success("✅ مقبول")
                         
                         can_manage = is_admin or r_creator == st.session_state.user
                         if can_manage:
                             btn_cols = cols[2].columns(4)
+                            
                             if idx > 0:
                                 if btn_cols[0].button("↑", key=f"up_{r_id}_{i_id}", use_container_width=True):
-                                    # (منطق الترتيب زي ما هو)
-                                    st.rerun()
+                                    with get_connection() as conn:
+                                        cursor = conn.cursor()
+                                        cursor.execute("SELECT id, created_at FROM report_items WHERE report_id = ? ORDER BY created_at ASC", (r_id,))
+                                        items = cursor.fetchall()
+                                        if i_id in [item[0] for item in items]:
+                                            pos = [item[0] for item in items].index(i_id)
+                                            if pos > 0:
+                                                current_date = items[pos][1]
+                                                prev_date = items[pos-1][1]
+                                                cursor.execute("UPDATE report_items SET created_at = ? WHERE id = ?", (prev_date, i_id))
+                                                cursor.execute("UPDATE report_items SET created_at = ? WHERE id = ?", (current_date, items[pos-1][0]))
+                                                conn.commit()
+                                                log_activity(st.session_state.user, "MOVE_ITEM_UP", i_title, f"Report {r_title}", f"Moved item up in report")
+                                        st.rerun()
+                            
                             if idx < len(all_items) - 1:
                                 if btn_cols[1].button("↓", key=f"down_{r_id}_{i_id}", use_container_width=True):
-                                    # (منطق الترتيب زي ما هو)
-                                    st.rerun()
+                                    with get_connection() as conn:
+                                        cursor = conn.cursor()
+                                        cursor.execute("SELECT id, created_at FROM report_items WHERE report_id = ? ORDER BY created_at ASC", (r_id,))
+                                        items = cursor.fetchall()
+                                        if i_id in [item[0] for item in items]:
+                                            pos = [item[0] for item in items].index(i_id)
+                                            if pos < len(items) - 1:
+                                                current_date = items[pos][1]
+                                                next_date = items[pos+1][1]
+                                                cursor.execute("UPDATE report_items SET created_at = ? WHERE id = ?", (next_date, i_id))
+                                                cursor.execute("UPDATE report_items SET created_at = ? WHERE id = ?", (current_date, items[pos+1][0]))
+                                                conn.commit()
+                                                log_activity(st.session_state.user, "MOVE_ITEM_DOWN", i_title, f"Report {r_title}", f"Moved item down in report")
+                                        st.rerun()
+                            
                             if btn_cols[2].button("✏️", key=f"edit_{r_id}_{i_id}", use_container_width=True):
                                 st.session_state[f"edit_item_{i_id}"] = True
-                            if btn_cols[3].button("🗑️", key=f"del_{r_id}_{i_id}", use_container_width=True):
+                            
+                            if btn_cols[3].button("🗑", key=f"del_{r_id}_{i_id}", use_container_width=True):
                                 st.session_state[f"confirm_del_item_{i_id}"] = True
                         
                         if st.session_state.get(f"edit_item_{i_id}", False):
@@ -1020,7 +953,7 @@ else:
                                     current_index = active_users.index(i_user) if i_user in active_users else 0
                                     new_user = st.selectbox("المكلف الجديد", active_users, index=current_index)
                                     col_save, col_cancel = st.columns(2)
-                                    if col_save.form_submit_button("💾 حفظ", use_container_width=True):
+                                    if col_save.form_submit_button("💾 حفظ"):
                                         with get_connection() as conn:
                                             conn.cursor().execute("UPDATE report_items SET title = ?, assigned_to_username = ? WHERE id = ?", (new_title, new_user, i_id))
                                             conn.commit()
@@ -1028,11 +961,12 @@ else:
                                         del st.session_state[f"edit_item_{i_id}"]
                                         st.success("تم تعديل البند.")
                                         st.rerun()
-                                    if col_cancel.form_submit_button("❌ إلغاء", use_container_width=True):
+                                    if col_cancel.form_submit_button("❌ إلغاء"):
                                         del st.session_state[f"edit_item_{i_id}"]
                                         st.rerun()
                         
                         action_cols = cols[3].columns(1)
+                        
                         file_path = os.path.join("storage", "Reports", str(i_id), i_file) if i_file else None
                         if i_file and os.path.exists(file_path):
                             with open(file_path, "rb") as f:
@@ -1054,7 +988,7 @@ else:
                         
                         if i_stat != "approved" and i_user == st.session_state.user:
                             uploaded_file = st.file_uploader(f"رفع ملف", key=f"upl_{i_id}")
-                            if st.button(f"رفع وتحديث", key=f"btn_up_{i_id}", use_container_width=True):
+                            if st.button(f"رفع وتحديث", key=f"btn_up_{i_id}"):
                                 if uploaded_file:
                                     folder = os.path.join("storage", "Reports", str(i_id))
                                     os.makedirs(folder, exist_ok=True)
@@ -1088,14 +1022,15 @@ else:
                             if col_n.button("❌ إلغاء", key=f"no_del_{i_id}"):
                                 del st.session_state[f"confirm_del_item_{i_id}"]
                                 st.rerun()
+                        
                         st.divider()
                 
                 can_add_item = is_admin or r_creator == st.session_state.user
                 if can_add_item:
                     with st.form(key=f"add_item_{r_id}", clear_on_submit=True):
                         col1, col2, col3 = st.columns([2, 2, 1])
-                        item_title = col1.text_input("عنوان البند")
-                        assign_user = col2.selectbox("الموظف المكلف", [u[0] for u in get_all_users() if u[7] == 'active'])
+                        item_title = col1.text_input("عنوان البند", placeholder="أدخل عنوان البند...")
+                        assign_user = col2.selectbox("الموظف المكلف", [u[0] for u in get_all_users() if u[7] == 'active'], key=f"assign_{r_id}")
                         if col3.form_submit_button("➕ إضافة"):
                             if item_title.strip():
                                 with get_connection() as conn:
@@ -1110,30 +1045,28 @@ else:
 
                 if is_admin or r_creator == st.session_state.user:
                     st.markdown("---")
-                    if st.button(f"🏁 إنهاء وأرشفة", key=f"complete_{r_id}", type="primary", use_container_width=True):
+                    if st.button(f"🏁 إنهاء وأرشفة", key=f"complete_{r_id}", type="primary"):
                         with get_connection() as conn:
                             conn.cursor().execute("UPDATE reports SET status = 'archived' WHERE id = ?", (r_id,))
                             conn.commit()
                             log_activity(st.session_state.user, "ARCHIVE_REPORT", r_title, "", f"Archived report: {r_title}")
                         st.success("تم أرشفة التقرير.")
                         st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
 
         # =========================================================
-        # 2️⃣ ثانياً: إنشاء تقرير جديد
+        # 2️⃣ ثانياً: إنشاء تقرير جديد (مضغوط ومعدل - للضيف ممنوع)
         # =========================================================
         if (is_admin or is_manager) and not is_guest:
             st.markdown("---")
-            st.markdown('<div class="modern-card">', unsafe_allow_html=True)
             st.caption("➕ إنشاء تقرير جديد")
             with st.expander(f"", expanded=False):
                 with st.form("create_report_form", clear_on_submit=True):
                     col1, col2 = st.columns(2)
-                    r_title = col1.text_input("عنوان التقرير")
-                    r_desc = col2.text_area("وصف التقرير")
+                    r_title = col1.text_input("عنوان التقرير", placeholder="أدخل عنوان التقرير...")
+                    r_desc = col2.text_area("وصف التقرير", placeholder="وصف مختصر للتقرير...")
                     all_active_users = [u[0] for u in get_all_users() if u[7] == 'active' and u[0] != st.session_state.user]
                     selected_viewers = st.multiselect("المستخدمين المسموح لهم بالمشاهدة:", all_active_users)
-                    if st.form_submit_button("إنشاء التقرير", type="primary", use_container_width=True):
+                    if st.form_submit_button("إنشاء التقرير", type="primary"):
                         if r_title.strip():
                             now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
                             with get_connection() as conn:
@@ -1148,14 +1081,12 @@ else:
                             st.rerun()
                         else:
                             st.error("يرجى كتابة عنوان.")
-            st.markdown('</div>', unsafe_allow_html=True)
 
         # =========================================================
-        # 3️⃣ ثالثاً: أرشيف التقارير
+        # 3️⃣ ثالثاً: أرشيف التقارير (معدل)
         # =========================================================
         if is_admin:
             st.markdown("---")
-            st.markdown('<div class="modern-card">', unsafe_allow_html=True)
             st.caption("📦 أرشيف التقارير")
             with st.expander(f"", expanded=False):
                 with get_connection() as conn:
@@ -1166,14 +1097,14 @@ else:
                     for r_id, r_title, r_creator, r_date in archived_reports:
                         col_a1, col_a2, col_a3 = st.columns([3, 1, 1])
                         col_a1.markdown(f"📄 **{r_title}** (بواسطة: {r_creator} - {r_date})")
-                        if col_a2.button("♻️ استرجاع", key=f"restore_{r_id}", use_container_width=True):
+                        if col_a2.button("♻️ استرجاع", key=f"restore_{r_id}"):
                             with get_connection() as conn:
                                 conn.cursor().execute("UPDATE reports SET status = 'active' WHERE id = ?", (r_id,))
                                 conn.commit()
                                 log_activity(st.session_state.user, "RESTORE_REPORT", r_title, "", f"Restored report: {r_title}")
                             st.success("تم استرجاع التقرير.")
                             st.rerun()
-                        if col_a3.button("🗑️ حذف نهائي", type="primary", key=f"hard_del_{r_id}", use_container_width=True):
+                        if col_a3.button("🗑️ حذف نهائي", key=f"hard_del_{r_id}", type="primary"):
                             with get_connection() as conn:
                                 conn.cursor().execute("DELETE FROM reports WHERE id = ?", (r_id,))
                                 conn.cursor().execute("DELETE FROM report_items WHERE report_id = ?", (r_id,))
@@ -1184,16 +1115,14 @@ else:
                             st.rerun()
                 else:
                     st.caption("لا توجد تقارير مؤرشفة.")
-            st.markdown('</div>', unsafe_allow_html=True)
 
     # ----------------------------------------------------
     # 4. إدارة المستخدمين (التبويبة الرابعة - إن وجدت)
     # ----------------------------------------------------
     if is_admin or is_manager and len(tabs) > 3:
         with tabs[3]:
-            st.markdown(f"<h2 style='font-size: 24px; margin-bottom: 16px;'>👤 {t['nav_users']}</h2>", unsafe_allow_html=True)
+            st.title("👤 " + t['nav_users'])
             
-            st.markdown('<div class="modern-card">', unsafe_allow_html=True)
             all_users_data = get_all_users()
             active_users_data = [u for u in all_users_data if u[7] == 'active']
             deleted_users_data = [u for u in all_users_data if u[7] == 'deleted']
@@ -1230,7 +1159,7 @@ else:
                 if u_names_list:
                     c_del1, c_del2 = st.columns([2, 1])
                     target_del_u = c_del1.selectbox("اختر مستخدم للحذف:", u_names_list, key="sel_del_u_list")
-                    if c_del2.button("🗑️ حذف", key="btn_del_selected_u", use_container_width=True):
+                    if c_del2.button("🗑️ حذف", key="btn_del_selected_u"):
                         st.session_state[f"confirm_u_{target_del_u}"] = True
 
                     if st.session_state.get(f"confirm_u_{target_del_u}", False):
@@ -1251,7 +1180,6 @@ else:
                             st.rerun()
             else:
                 st.info("لا يوجد مستخدمون يطابقون البحث.")
-            st.markdown('</div>', unsafe_allow_html=True)
 
             st.divider()
 
@@ -1261,7 +1189,6 @@ else:
                 tab_add, tab_edit, tab_deleted_list = st.tabs(["➕ " + t['user_add_tab'], "✏️ " + t['user_edit_tab'], "🗑️ " + t['user_deleted_list_tab']])
 
             with tab_add:
-                st.markdown('<div class="modern-card">', unsafe_allow_html=True)
                 with st.form("user_add_form", clear_on_submit=True):
                     new_u = st.text_input(t['username'])
                     new_p = st.text_input(t['password'], type="password")
@@ -1269,13 +1196,15 @@ else:
                     selected_role = st.selectbox(t['role_label'], role_opts)
                     selected_allowed = st.multiselect(t['allowed_folders_label'], get_all_folders(), default=["Main"])
                     
-                    if st.form_submit_button(t['save_user_btn'], use_container_width=True):
+                    if st.form_submit_button(t['save_user_btn']):
                         if new_u and new_p:
                             now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
                             with get_connection() as conn:
                                 cursor = conn.cursor()
                                 try:
                                     cursor.execute("INSERT INTO users (username, password, allowed_folders, role, created_by, created_at, updated_at, changes_log, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active')", (new_u, hash_password(new_p), ",".join(selected_allowed), selected_role, st.session_state.user, now_str, now_str, f"Created on {now_str}"))
+                                    user_id = cursor.lastrowid
+                                    
                                     conn.commit()
                                     log_activity(st.session_state.user, "CREATE_USER", new_u, "", f"Created user: {new_u} with role {selected_role}")
                                     st.success(t['user_saved_success'].format(name=new_u))
@@ -1284,10 +1213,8 @@ else:
                                     st.error("اسم المستخدم موجود مسبقاً!")
                         else:
                             st.error("يرجى تعبئة الحقول.")
-                st.markdown('</div>', unsafe_allow_html=True)
 
             with tab_edit:
-                st.markdown('<div class="modern-card">', unsafe_allow_html=True)
                 editable_users = [u[0] for u in display_users if u[0] != "admin"]
                 edit_user_options = ["-- اختر مستخدم --"] + editable_users
                 
@@ -1306,7 +1233,7 @@ else:
                     default_allowed = user_current_data["allowed_folders"] if user_current_data else ["Main"]
                     selected_edit_allowed = st.multiselect(t['allowed_folders_label'], get_all_folders(), default=default_allowed)
                     
-                    if st.form_submit_button(t['save_edit_btn'], use_container_width=True):
+                    if st.form_submit_button(t['save_edit_btn']):
                         if target_u and target_u != "-- اختر مستخدم --":
                             now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
                             folders_str = ",".join(selected_edit_allowed)
@@ -1322,20 +1249,16 @@ else:
                             st.rerun()
                         else:
                             st.error("يرجى اختيار مستخدم.")
-                st.markdown('</div>', unsafe_allow_html=True)
 
             with tab_deleted_list:
-                st.markdown('<div class="modern-card">', unsafe_allow_html=True)
                 if not display_deleted_users:
                     st.info("لا توجد حسابات محذوفة.")
                 else:
                     for du in display_deleted_users:
                         st.markdown(f"🗑️ **{du[0]}** (حذف بواسطة: {du[8] or 'Unknown'} في {du[9] or '-'})")
-                st.markdown('</div>', unsafe_allow_html=True)
 
             if is_admin:
                 with tab_admin_settings:
-                    st.markdown('<div class="modern-card">', unsafe_allow_html=True)
                     st.subheader("🔐 تغيير بيانات الأدمن")
                     with st.form("admin_settings_form", clear_on_submit=True):
                         old_pass = st.text_input(t['admin_change_pass'], type="password")
@@ -1343,7 +1266,7 @@ else:
                         new_pass = st.text_input(t['admin_new_pass'], type="password")
                         confirm_pass = st.text_input(t['admin_confirm_pass'], type="password")
                         
-                        if st.form_submit_button(t['admin_update_btn'], use_container_width=True):
+                        if st.form_submit_button(t['admin_update_btn']):
                             if not old_pass:
                                 st.error("يجب كتابة كلمة المرور الحالية.")
                             elif new_pass and new_pass != confirm_pass:
@@ -1368,26 +1291,22 @@ else:
                                         log_activity(st.session_state.user, "UPDATE_ADMIN", "", "", "Updated admin settings")
                                     st.success("تم تحديث البيانات.")
                                     st.rerun()
-                    st.markdown('</div>', unsafe_allow_html=True)
 
     # ----------------------------------------------------
     # 5. لوحة التحكم الرئيسية (التبويبة الخامسة - إن وجدت)
     # ----------------------------------------------------
     if is_admin and len(tabs) > 4:
         with tabs[4]:
-            st.markdown(f"<h2 style='font-size: 24px; margin-bottom: 16px;'>⚙️ {t['nav_master']}</h2>", unsafe_allow_html=True)
+            st.title("⚙️ " + t['nav_master'])
             
-            st.markdown('<div class="modern-card">', unsafe_allow_html=True)
             st.subheader("📊 سجل العمليات")
             with get_connection() as conn:
                 df_audit = pd.read_sql_query("SELECT username, action_type, target_file, target_folder, timestamp, details FROM activity_logs ORDER BY id DESC", conn)
 
             if not df_audit.empty:
                 st.dataframe(df_audit, use_container_width=True, hide_index=True)
-            st.markdown('</div>', unsafe_allow_html=True)
 
             st.divider()
-            st.markdown('<div class="modern-card">', unsafe_allow_html=True)
             st.subheader("♻️ سلة المحذوفات")
             m_del_tab, f_del_tab = st.tabs(["📁 المجلدات", "📄 الملفات"])
             
@@ -1397,7 +1316,7 @@ else:
                     for m_folder, del_by, del_at in deleted_mains:
                         col_dm1, col_dm2, col_dm3 = st.columns([3, 1, 1])
                         col_dm1.markdown(f"🗑️ **{m_folder}**")
-                        if col_dm2.button("♻️ استرجاع", key=f"rec_m_{m_folder}", use_container_width=True):
+                        if col_dm2.button("♻️ استرجاع", key=f"rec_m_{m_folder}"):
                             with get_connection() as conn:
                                 cursor = conn.cursor()
                                 cursor.execute("UPDATE custom_folders SET status = 'active' WHERE folder_name = ?", (m_folder,))
@@ -1407,7 +1326,7 @@ else:
                                 log_activity(st.session_state.user, "RESTORE_FOLDER", m_folder, "", f"Restored folder: {m_folder}")
                             st.success("تم استرجاع المجلد.")
                             st.rerun()
-                        if col_dm3.button("🗑️ حذف نهائي", type="primary", key=f"hard_del_m_{m_folder}", use_container_width=True):
+                        if col_dm3.button("🗑️ حذف نهائي", key=f"hard_del_m_{m_folder}", type="primary"):
                             with get_connection() as conn:
                                 conn.cursor().execute("DELETE FROM custom_folders WHERE folder_name = ?", (m_folder,))
                                 conn.cursor().execute("DELETE FROM sub_folders WHERE parent_folder = ?", (m_folder,))
@@ -1419,10 +1338,8 @@ else:
                             st.rerun()
                 else:
                     st.info("لا توجد مجلدات محذوفة.")
-            st.markdown('</div>', unsafe_allow_html=True)
 
             with f_del_tab:
-                st.markdown('<div class="modern-card">', unsafe_allow_html=True)
                 with get_connection() as conn:
                     cursor = conn.cursor()
                     cursor.execute("SELECT id, filename, folder, deleted_by, deleted_at FROM file_logs WHERE status = 'deleted'")
@@ -1431,14 +1348,14 @@ else:
                     for f_id, f_name, f_folder, d_by, d_at in del_files_rows:
                         fc1, fc2, fc3 = st.columns([3, 1, 1])
                         fc1.markdown(f"📄 **{f_name}**")
-                        if fc2.button("♻️ استرجاع", key=f"rec_f_{f_id}", use_container_width=True):
+                        if fc2.button("♻️ استرجاع", key=f"rec_f_{f_id}"):
                             with get_connection() as conn:
                                 conn.cursor().execute("UPDATE file_logs SET status = 'active' WHERE id = ?", (f_id,))
                                 conn.commit()
                                 log_activity(st.session_state.user, "RESTORE_FILE", f_name, f_folder, f"Restored file: {f_name}")
                             st.success("تم استرجاع الملف.")
                             st.rerun()
-                        if fc3.button("🗑️ حذف نهائي", type="primary", key=f"hard_del_f_{f_id}", use_container_width=True):
+                        if fc3.button("🗑️ حذف نهائي", key=f"hard_del_f_{f_id}", type="primary"):
                             with get_connection() as conn:
                                 conn.cursor().execute("DELETE FROM file_logs WHERE id = ?", (f_id,))
                                 conn.commit()
@@ -1447,7 +1364,6 @@ else:
                             st.rerun()
                 else:
                     st.info("لا توجد ملفات محذوفة.")
-                st.markdown('</div>', unsafe_allow_html=True)
 
 # =============================================================
 # الـ Footer
