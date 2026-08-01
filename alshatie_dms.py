@@ -16,7 +16,6 @@ from database import (
     get_connection, hash_password,
     get_folder_permissions, update_folder_permissions,
     get_user_viewable_folders, get_guest_folder
-    # تم إزالة sync_single_user_permissions من هنا
 )
 from translations import TRANSLATIONS
 
@@ -230,6 +229,9 @@ if not st.session_state.logged_in:
             st.error("خطأ في بيانات الدخول / Invalid Credentials")
 
 else:
+    # ✅ هذا السطر يضمن أن الصفحة تبدأ من الأعلى عند كل دخول جديد
+    st.session_state.nav_path = []
+
     t = TRANSLATIONS[st.session_state.lang]
 
     is_guest = (st.session_state.role == "guest")
