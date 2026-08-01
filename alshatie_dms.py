@@ -25,12 +25,22 @@ st.markdown("""
 <link rel="icon" type="image/x-icon" href="static/favicon.ico">
 """, unsafe_allow_html=True)
 
-# ✅ هذا السطر يضمن أن الصفحة تفتح من الأعلى دائماً
+# ✅ الكود السحري لجعل الصفحة تفتح من فوق دائماً
 st.markdown("""
 <script>
     window.onload = function() {
         window.scrollTo(0,0);
     }
+</script>
+""", unsafe_allow_html=True)
+
+# ✅ طريقة احتياطية إضافية: لما الصفحة تعمل ريفريش، تصعد لفوق
+st.markdown("""
+<script>
+    // سكربت إضافي لضمان الصعود للأعلى عند أي تحديث
+    setTimeout(function() {
+        window.scrollTo(0,0);
+    }, 100);
 </script>
 """, unsafe_allow_html=True)
 
