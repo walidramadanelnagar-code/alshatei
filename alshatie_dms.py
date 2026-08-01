@@ -25,7 +25,6 @@ st.markdown("""
 <link rel="icon" type="image/x-icon" href="static/favicon.ico">
 """, unsafe_allow_html=True)
 
-# ✅ الكود السحري لجعل الصفحة تفتح من فوق دائماً
 st.markdown("""
 <script>
     window.onload = function() {
@@ -34,10 +33,8 @@ st.markdown("""
 </script>
 """, unsafe_allow_html=True)
 
-# ✅ طريقة احتياطية إضافية: لما الصفحة تعمل ريفريش، تصعد لفوق
 st.markdown("""
 <script>
-    // سكربت إضافي لضمان الصعود للأعلى عند أي تحديث
     setTimeout(function() {
         window.scrollTo(0,0);
     }, 100);
@@ -254,14 +251,11 @@ else:
     is_admin = (st.session_state.role == "Admin" or st.session_state.user == "admin")
     is_manager = (st.session_state.role == "Manager")
 
-    if is_guest:
-        main_title = "📄 " + t['nav_files_guest']
-        files_screen_title = "📂 " + t['nav_files']
-    else:
-        main_title = "📂 " + t['nav_main_user']
-        files_screen_title = "📁 " + t['nav_files']
+    # ✅ تم إزالة تبويبة الضيف الخاصة، سيستخدم نفس تبويبات المستخدم العادي (عدا الشاشة الأولى)
+    main_title = "📂 " + t['nav_main_user']
+    files_screen_title = "📁 " + t['nav_files']
     
-    # ✅ ترتيب الشاشات باستخدام التبويبات
+    # ✅ ترتيب الشاشات باستخدام التبويبات (موحد للجميع الآن)
     nav_tabs = [main_title, files_screen_title, t['nav_reports']]
     if is_admin or is_manager:
         nav_tabs.append("👤 " + t['nav_users'])
@@ -311,118 +305,90 @@ else:
     with tabs[0]:
         st.title(main_title)
         
-        if is_guest:
-            # الضيف يشوف بس الملفات اللي اتبعتتله (الوارد فقط) في التبويبة الأولى
-            with get_connection() as conn:
-                cursor = conn.cursor()
-                cursor.execute("""
-                    SELECT filename, file_path, timestamp, sender_username, message
-                    FROM user_files 
-                    WHERE recipient_username = ?
-                    ORDER BY timestamp DESC
-                """, (st.session_state.user,))
-                guest_files = cursor.fetchall()
+        # شاشة اليوزر العادي (ليها المرسلات والوارد) - الضيف الآن يستخدم هذه الشاشة
+        st.subheader(t['send_title'])
+        with st.form("send_file_form", clear_on_submit=True):
+            active_users = [u[0] for u in get_all_users() if u[7] == 'active' and u[0] != st.session_state.user and u[2] != "Guest"]
             
-            if guest_files:
-                for f_name, f_path, time_str, sender, msg in guest_files:
-                    col1, col2, col3 = st.columns([2, 2, 1])
-                    col1.markdown(f"📄 **{f_name}**")
-                    col2.caption(f"👤 من: {sender} | 🕒 {time_str}")
-                    if msg: col2.caption(f"📝 {msg}")
-                    
-                    if os.path.exists(f_path):
-                        with open(f_path, "rb") as f:
-                            col3.download_button("⬇️ تحميل", f, file_name=f_name, key=f"dl_guest_{f_name}")
-                    else:
-                        col3.caption("الملف غير موجود")
+            if not active_users:
+                st.warning(t['no_active_users'])
             else:
-                st.info(t['no_inbox'])
-
-        else:
-            # هنا شاشة اليوزر العادي (ليها المرسلات والوارد)
-            st.subheader(t['send_title'])
-            with st.form("send_file_form", clear_on_submit=True):
-                active_users = [u[0] for u in get_all_users() if u[7] == 'active' and u[0] != st.session_state.user and u[2] != "Guest"]
+                recipient = st.selectbox(t['send_to'], ["--- اختر المستخدم ---"] + active_users)
+                msg = st.text_area(t['your_message'])
+                uploaded_file = st.file_uploader(t['choose_file'], type=None, help="200 MB كحد أقصى.")
                 
-                if not active_users:
-                    st.warning(t['no_active_users'])
+                if st.form_submit_button(t['send_now']):
+                    if uploaded_file and recipient and recipient != "--- اختر المستخدم ---":
+                        progress_bar = st.progress(0, t['sending'])
+                        user_folder = os.path.join("storage", "UserFiles", recipient)
+                        os.makedirs(user_folder, exist_ok=True)
+                        file_path = os.path.join(user_folder, uploaded_file.name)
+                        with open(file_path, "wb") as f:
+                            f.write(uploaded_file.getbuffer())
+                        now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+                        with get_connection() as conn:
+                            cursor = conn.cursor()
+                            cursor.execute("INSERT INTO user_files (filename, sender_username, recipient_username, message, file_path, timestamp) VALUES (?, ?, ?, ?, ?, ?)", (uploaded_file.name, st.session_state.user, recipient, msg, file_path, now_str))
+                            conn.commit()
+                        progress_bar.empty()
+                        st.success(f"✅ {t['send_success']} {recipient}!")
+                        st.rerun()
+                    else:
+                        st.error(t['send_error'])
+        
+        st.divider()
+        st.subheader(t['inbox_title'])
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, filename, sender_username, message, file_path, timestamp, deleted_by_sender, deleted_by_recipient FROM user_files WHERE recipient_username = ? AND deleted_by_recipient = 0 ORDER BY timestamp DESC", (st.session_state.user,))
+            inbox = cursor.fetchall()
+        if inbox:
+            for row in inbox:
+                (msg_id, f_name, sender, msg, f_path, time_str, del_s, del_r) = row
+                col1, col2, col3 = st.columns([2, 2, 1])
+                col1.markdown(f"📄 **{f_name}**")
+                col2.caption(f"👤 {sender} | 🕒 {time_str}")
+                if msg: col2.caption(f"📝 {msg}")
+                if os.path.exists(f_path):
+                    with open(f_path, "rb") as f:
+                        col3.download_button("⬇️ تحميل", f, file_name=f_name, key=f"dl_inbox_{msg_id}")
                 else:
-                    recipient = st.selectbox(t['send_to'], ["--- اختر المستخدم ---"] + active_users)
-                    msg = st.text_area(t['your_message'])
-                    uploaded_file = st.file_uploader(t['choose_file'], type=None, help="200 MB كحد أقصى.")
-                    
-                    if st.form_submit_button(t['send_now']):
-                        if uploaded_file and recipient and recipient != "--- اختر المستخدم ---":
-                            progress_bar = st.progress(0, t['sending'])
-                            user_folder = os.path.join("storage", "UserFiles", recipient)
-                            os.makedirs(user_folder, exist_ok=True)
-                            file_path = os.path.join(user_folder, uploaded_file.name)
-                            with open(file_path, "wb") as f:
-                                f.write(uploaded_file.getbuffer())
-                            now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
-                            with get_connection() as conn:
-                                cursor = conn.cursor()
-                                cursor.execute("INSERT INTO user_files (filename, sender_username, recipient_username, message, file_path, timestamp) VALUES (?, ?, ?, ?, ?, ?)", (uploaded_file.name, st.session_state.user, recipient, msg, file_path, now_str))
-                                conn.commit()
-                            progress_bar.empty()
-                            st.success(f"✅ {t['send_success']} {recipient}!")
-                            st.rerun()
-                        else:
-                            st.error(t['send_error'])
-            
-            st.divider()
-            st.subheader(t['inbox_title'])
-            with get_connection() as conn:
-                cursor = conn.cursor()
-                cursor.execute("SELECT id, filename, sender_username, message, file_path, timestamp, deleted_by_sender, deleted_by_recipient FROM user_files WHERE recipient_username = ? AND deleted_by_recipient = 0 ORDER BY timestamp DESC", (st.session_state.user,))
-                inbox = cursor.fetchall()
-            if inbox:
-                for row in inbox:
-                    (msg_id, f_name, sender, msg, f_path, time_str, del_s, del_r) = row
-                    col1, col2, col3 = st.columns([2, 2, 1])
-                    col1.markdown(f"📄 **{f_name}**")
-                    col2.caption(f"👤 {sender} | 🕒 {time_str}")
-                    if msg: col2.caption(f"📝 {msg}")
-                    if os.path.exists(f_path):
-                        with open(f_path, "rb") as f:
-                            col3.download_button("⬇️ تحميل", f, file_name=f_name, key=f"dl_inbox_{msg_id}")
-                    else:
-                        col3.caption(t['file_not_found'])
-                    if st.button(t['delete_btn'], key=f"del_msg_{msg_id}"):
-                        with get_connection() as conn:
-                            conn.cursor().execute("UPDATE user_files SET deleted_by_recipient = 1 WHERE id = ?", (msg_id,))
-                            conn.commit()
-                        st.success(t['delete_success'])
-                        st.rerun()
-            else:
-                st.info(t['no_inbox'])
+                    col3.caption(t['file_not_found'])
+                if st.button(t['delete_btn'], key=f"del_msg_{msg_id}"):
+                    with get_connection() as conn:
+                        conn.cursor().execute("UPDATE user_files SET deleted_by_recipient = 1 WHERE id = ?", (msg_id,))
+                        conn.commit()
+                    st.success(t['delete_success'])
+                    st.rerun()
+        else:
+            st.info(t['no_inbox'])
 
-            st.divider()
-            st.subheader(t['sent_title'])
-            with get_connection() as conn:
-                cursor = conn.cursor()
-                cursor.execute("SELECT id, filename, recipient_username, message, file_path, timestamp, deleted_by_sender, deleted_by_recipient FROM user_files WHERE sender_username = ? AND deleted_by_sender = 0 ORDER BY timestamp DESC", (st.session_state.user,))
-                sent_items = cursor.fetchall()
-            if sent_items:
-                for row in sent_items:
-                    (msg_id, f_name, recipient, msg, f_path, time_str, del_s, del_r) = row
-                    col1, col2, col3 = st.columns([2, 2, 1])
-                    col1.markdown(f"📄 **{f_name}** ({t['to_label']} {recipient})")
-                    col2.caption(f"🕒 {time_str}")
-                    if msg: col2.caption(f"📝 {msg}")
-                    if os.path.exists(f_path):
-                        with open(f_path, "rb") as f:
-                            col3.download_button("⬇️ تحميل", f, file_name=f_name, key=f"dl_sent_{msg_id}")
-                    else:
-                        col3.caption(t['file_not_found'])
-                    if st.button(t['delete_btn'], key=f"del_sent_{msg_id}"):
-                        with get_connection() as conn:
-                            conn.cursor().execute("UPDATE user_files SET deleted_by_sender = 1 WHERE id = ?", (msg_id,))
-                            conn.commit()
-                        st.success(t['delete_success'])
-                        st.rerun()
-            else:
-                st.info(t['no_sent'])
+        st.divider()
+        st.subheader(t['sent_title'])
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, filename, recipient_username, message, file_path, timestamp, deleted_by_sender, deleted_by_recipient FROM user_files WHERE sender_username = ? AND deleted_by_sender = 0 ORDER BY timestamp DESC", (st.session_state.user,))
+            sent_items = cursor.fetchall()
+        if sent_items:
+            for row in sent_items:
+                (msg_id, f_name, recipient, msg, f_path, time_str, del_s, del_r) = row
+                col1, col2, col3 = st.columns([2, 2, 1])
+                col1.markdown(f"📄 **{f_name}** ({t['to_label']} {recipient})")
+                col2.caption(f"🕒 {time_str}")
+                if msg: col2.caption(f"📝 {msg}")
+                if os.path.exists(f_path):
+                    with open(f_path, "rb") as f:
+                        col3.download_button("⬇️ تحميل", f, file_name=f_name, key=f"dl_sent_{msg_id}")
+                else:
+                    col3.caption(t['file_not_found'])
+                if st.button(t['delete_btn'], key=f"del_sent_{msg_id}"):
+                    with get_connection() as conn:
+                        conn.cursor().execute("UPDATE user_files SET deleted_by_sender = 1 WHERE id = ?", (msg_id,))
+                        conn.commit()
+                    st.success(t['delete_success'])
+                    st.rerun()
+        else:
+            st.info(t['no_sent'])
 
     # ----------------------------------------------------
     # 2. إدارة الملفات والمجلدات (التبويبة الثانية)
@@ -598,9 +564,8 @@ else:
             if is_admin:
                 allowed_folders = get_all_folders()
             elif is_guest:
-                # الضيف بيشوف بس المجلد الخاص بيه
-                guest_folder = get_guest_folder(st.session_state.user)
-                allowed_folders = [guest_folder] if guest_folder else []
+                # الضيف بيشوف المجلدات اللي ليه صلاحية فيها فقط
+                allowed_folders = get_user_viewable_folders(st.session_state.user, False)
             else:
                 allowed_folders = get_user_viewable_folders(st.session_state.user, is_admin)
             
@@ -664,14 +629,11 @@ else:
             
             if current_display_folder != "ROOT":
                 current_parent = st.session_state.nav_path[0]
-                
-                # ✅ تم إصلاح صلاحية الدخول هنا
                 if is_admin:
                     can_upload_here = True
                 elif is_guest:
                     can_upload_here = False
                 else:
-                    # التحقق إذا كان المستخدم يمتلك صلاحية لهذا المجلد في folder_permissions
                     user_folders = get_user_viewable_folders(st.session_state.user, False)
                     can_upload_here = current_parent in user_folders
 
